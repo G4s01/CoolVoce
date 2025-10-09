@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>CoopVoce - Generatore Link Offerte ❤️💚</title>
+  <title>CoolVoce ❤️💚</title>
   <style>
     html, body {
       height: 100%;
@@ -15,10 +15,10 @@
       flex-direction: column;
       padding: 20px;
       box-sizing: border-box;
-      background: linear-gradient(135deg, #fff6f6, #e6f8e8);
+      background: linear-gradient(135deg, #fff4f4, #e9f8ee);
     }
 
-    /* Logo CoopVoce simulato */
+    /* Logo CoolVoce */
     .logo {
       display: flex;
       align-items: center;
@@ -30,7 +30,7 @@
     .logo-shape {
       width: 38px;
       height: 38px;
-      background: linear-gradient(145deg, #e30613, #ff4d4d);
+      background: linear-gradient(145deg, #cc0000, #00b25c);
       border-radius: 10px;
       box-shadow: 0 3px 8px rgba(0,0,0,0.15);
       transform: rotate(-10deg);
@@ -39,9 +39,289 @@
     .logo-text {
       font-size: 2em;
       font-weight: bold;
-      color: #009640;
+      color: #cc0000;
       letter-spacing: 1px;
     }
 
     h1 {
-      margin:
+      margin: 0 0 20px 0;
+      text-align: center;
+      font-size: 2.2em;
+      color: #222;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+      max-width: 1200px;
+      width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .controls div {
+      flex: 1;
+    }
+
+    input, select, button {
+      font-size: 1.3em;
+      padding: 14px 18px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      width: 100%;
+      box-sizing: border-box;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    input:focus, select:focus, button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+      outline: none;
+    }
+
+    button {
+      background-color: #00b25c;
+      color: white;
+      border: none;
+      font-weight: bold;
+    }
+
+    button.copied {
+      background-color: #28a745 !important;
+      animation: pulse 0.5s ease-in-out;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    #linksContainer {
+      flex: 1;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 10px;
+      max-width: 1200px;
+      width: 100%;
+      margin: auto;
+      background: #f8fcf9;
+      border: 2px solid #00b25c33;
+      border-radius: 10px;
+      padding: 10px;
+      overflow-y: auto;
+    }
+
+    .link-box {
+      background: white;
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 1.3em;
+      word-break: break-all;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeInUp 0.4s ease forwards;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    }
+
+    .highlight {
+      background-color: #d6ffe3;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    label {
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+
+    .link-box a {
+      color: #00b25c;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .link-box a:hover {
+      text-decoration: underline;
+    }
+
+    #offerDescription {
+      max-width: 1200px;
+      margin: 0 auto 15px auto;
+      background: #fff6f6;
+      border-left: 5px solid #cc0000;
+      padding: 12px 16px;
+      border-radius: 8px;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .error {
+      color: #d93025;
+      text-align: center;
+      font-size: 1.2em;
+      margin-bottom: 10px;
+      font-weight: bold;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @media (max-width: 768px) {
+      input, select, button {
+        font-size: 1.1em;
+        padding: 10px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">
+    <div class="logo-shape"></div>
+    <div class="logo-text">CoolVoce ❤️💚</div>
+  </div>
+
+  <h1>Generatore link offerte CoopVoce</h1>
+
+  <div id="errorMsg"></div>
+
+  <div class="controls">
+    <div>
+      <label for="offerSelect">OFFERTA</label><br>
+      <select id="offerSelect">
+        <option value="">— Seleziona un'offerta —</option>
+        <option value="EVO20_MNPANN">EVO20_MNPANN</option>
+        <option value="EVO50_MNPGRT2">EVO50_MNPGRT2</option>
+        <option value="EVO150_MNPGRT5">EVO150_MNPGRT5</option>
+        <option value="EVO200_MNPGRT7">EVO200_MNPGRT7</option>
+        <option value="EXT300MNPGRT5">EXT300MNPGRT5</option>
+        <option value="EXT300MNPGRT4">EXT300MNPGRT4</option>
+        <option value="EVOUNMNPATGRT">EVOUNMNPATGRT</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="customOffer">CODICE PERSONALIZZATO</label><br>
+      <input type="text" id="customOffer" placeholder="Inserisci un codice offerta">
+    </div>
+
+    <div>
+      <label for="simType">SIM</label><br>
+      <select id="simType">
+        <option value="SPEDIZIONE">SIM fisica</option>
+        <option value="ESIM">eSIM</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="activationType">ATTIVAZIONE</label><br>
+      <select id="activationType">
+        <option value="1">NUOVO</option>
+        <option value="2">MNP</option>
+      </select>
+    </div>
+
+    <div style="align-self: end;">
+      <button id="generateBtn">GENERA</button>
+    </div>
+  </div>
+
+  <div id="offerDescription"></div>
+  <div id="linksContainer"></div>
+
+  <script>
+    const offers = {
+      "EVO20_MNPANN": {
+        desc: "📱 Minuti illimitati, 1000 SMS e 20GB in 4G+<br>💰 29.90€ primo anno, poi 4.90€/mese<br>📆 Scaduta nel: 06/2025"
+      },
+      "EVO50_MNPGRT2": {
+        desc: "📱 Minuti illimitati, 1000 SMS e 50GB in 4G+<br>💰 4.90€/mese (nessun costo iniziale)<br>📆 Scaduta nel: 12/2024"
+      },
+      "EVO150_MNPGRT5": {
+        desc: "📱 Minuti illimitati, 1000 SMS e 150GB in 4G+<br>💰 6.90€/mese (nessun costo iniziale)<br>📆 Scaduta nel: 07/2025"
+      },
+      "EVO200_MNPGRT7": {
+        desc: "📱 Minuti illimitati, 1000 SMS e 200GB in 4G+<br>💰 7.90€/mese (nessun costo iniziale)<br>📆 Scaduta nel: 12/2024"
+      },
+      "EXT300MNPGRT5": {
+        desc: "📱 Minuti illimitati, 1000 SMS e 300GB in 4G+<br>💰 7.90€/mese (attivazione gratuita)<br>📆 Scaduta nel: 06/2025"
+      },
+      "EXT300MNPGRT4": {
+        desc: "📱 Minuti illimitati, 1000 SMS e 300GB in 4G+<br>💰 9.90€/mese (nessun costo iniziale)<br>📆 Scaduta nel: 03/2025"
+      },
+      "EVOUNMNPATGRT": {
+        desc: "📱 Minuti illimitati, 1000 SMS e GB Illimitati (form. 500) in 4G+<br>💰 9.90€/mese (attivazione gratuita)<br>📆 Scaduta nel: 11/2024"
+      }
+    };
+
+    const offerSelect = document.getElementById("offerSelect");
+    const offerDescription = document.getElementById("offerDescription");
+    const generateBtn = document.getElementById("generateBtn");
+    const linksContainer = document.getElementById("linksContainer");
+    const errorMsg = document.getElementById("errorMsg");
+
+    offerSelect.addEventListener("change", () => {
+      const offer = offerSelect.value;
+      const customOfferInput = document.getElementById("customOffer");
+
+      // Svuota campo personalizzato se si sceglie un'offerta
+      if (offer && customOfferInput.value.trim() !== "") {
+        customOfferInput.value = "";
+      }
+
+      if (offers[offer]) {
+        offerDescription.innerHTML = offers[offer].desc;
+        offerDescription.style.display = "block";
+      } else {
+        offerDescription.style.display = "none";
+      }
+    });
+
+    generateBtn.addEventListener("click", () => {
+      const simType = document.getElementById("simType").value;
+      const activationType = document.getElementById("activationType").value;
+      const offerId = offerSelect.value || document.getElementById("customOffer").value.trim();
+
+      errorMsg.textContent = "";
+      if (!offerId) {
+        errorMsg.textContent = "⚠️ Inserisci o seleziona un codice offerta!";
+        errorMsg.className = "error";
+        return;
+      }
+
+      const prefix = simType === "ESIM" ? "ES_" : "";
+      const link = `https://shop.coopvoce.it/?tipoFlusso=${simType}&tipoAttivazione=${activationType}&codiceCampagna=${prefix}${offerId}`;
+
+      const box = document.createElement("div");
+      box.className = "link-box highlight";
+      box.innerHTML = `<a href="${link}" target="_blank">${link}</a>`;
+      linksContainer.prepend(box);
+
+      const tempInput = document.createElement("input");
+      document.body.appendChild(tempInput);
+      tempInput.value = link;
+      tempInput.select();
+      document.execCommand("copy");
+      document.body.removeChild(tempInput);
+
+      generateBtn.textContent = "COPIATO!";
+      generateBtn.classList.add("copied");
+      setTimeout(() => {
+        generateBtn.textContent = "GENERA";
+        generateBtn.classList.remove("copied");
+      }, 2000);
+
+      setTimeout(() => box.classList.remove("highlight"), 1000);
+    });
+  </script>
+</body>
+</html>
