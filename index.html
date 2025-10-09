@@ -15,7 +15,7 @@
       flex-direction: column;
       padding: 20px;
       box-sizing: border-box;
-      background: linear-gradient(135deg, #fff4f4, #e9f8ee);
+      background: linear-gradient(135deg, #fff8f8, #f3fff3);
     }
 
     /* Logo CoolVoce */
@@ -24,56 +24,63 @@
       align-items: center;
       justify-content: center;
       gap: 12px;
-      margin-bottom: 10px;
+      margin-bottom: 20px;
     }
 
     .logo-shape {
       width: 38px;
       height: 38px;
-      background: linear-gradient(145deg, #cc0000, #00b25c);
+      background: linear-gradient(145deg, #b30000, #00b25c);
       border-radius: 10px;
       box-shadow: 0 3px 8px rgba(0,0,0,0.15);
       transform: rotate(-10deg);
     }
 
     .logo-text {
-      font-size: 2em;
+      font-size: 2.2em;
       font-weight: bold;
-      color: #cc0000;
+      color: #b30000;
       letter-spacing: 1px;
     }
 
-    h1 {
-      margin: 0 0 20px 0;
-      text-align: center;
-      font-size: 2.2em;
-      color: #222;
+    .hearts {
+      font-size: 1.8em;
+      margin-left: 6px;
     }
 
+    /* Controlli */
     .controls {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      margin-bottom: 20px;
+      justify-content: center;
+      align-items: end;
       max-width: 1200px;
       width: 100%;
-      margin-left: auto;
-      margin-right: auto;
+      margin: 0 auto 20px auto;
     }
 
     .controls div {
-      flex: 1;
+      flex: 1 1 220px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    label {
+      font-weight: bold;
+      font-size: 1.1em;
+      margin-bottom: 6px;
     }
 
     input, select, button {
       font-size: 1.3em;
-      padding: 14px 18px;
+      padding: 14px 16px;
       border-radius: 8px;
       border: 1px solid #ccc;
-      width: 100%;
       box-sizing: border-box;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       transition: transform 0.15s ease, box-shadow 0.15s ease;
+      width: 100%;
     }
 
     input:focus, select:focus, button:hover {
@@ -87,6 +94,7 @@
       color: white;
       border: none;
       font-weight: bold;
+      padding: 16px 22px;
     }
 
     button.copied {
@@ -100,6 +108,7 @@
       100% { transform: scale(1); }
     }
 
+    /* Contenitore link */
     #linksContainer {
       flex: 1;
       display: flex;
@@ -108,7 +117,7 @@
       max-width: 1200px;
       width: 100%;
       margin: auto;
-      background: #f8fcf9;
+      background: #f9fff9;
       border: 2px solid #00b25c33;
       border-radius: 10px;
       padding: 10px;
@@ -117,28 +126,14 @@
 
     .link-box {
       background: white;
-      padding: 16px;
+      padding: 14px;
       border-radius: 8px;
-      font-size: 1.3em;
+      font-size: 1.2em;
       word-break: break-all;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
       opacity: 0;
       transform: translateY(10px);
       animation: fadeInUp 0.4s ease forwards;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-    }
-
-    .highlight {
-      background-color: #d6ffe3;
-    }
-
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    label {
-      font-weight: bold;
-      font-size: 1.1em;
     }
 
     .link-box a {
@@ -151,35 +146,44 @@
       text-decoration: underline;
     }
 
-    #offerDescription {
-      max-width: 1200px;
-      margin: 0 auto 15px auto;
-      background: #fff6f6;
-      border-left: 5px solid #cc0000;
-      padding: 12px 16px;
-      border-radius: 8px;
+    .highlight {
+      background-color: #d6ffe3;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .offer-description {
+      font-size: 1em;
+      color: #333;
+      background: #f8fff9;
+      border-left: 4px solid #00b25c;
+      padding: 8px 12px;
+      margin-top: 8px;
+      border-radius: 6px;
       display: none;
-      animation: fadeIn 0.3s ease;
     }
 
-    .error {
-      color: #d93025;
-      text-align: center;
-      font-size: 1.2em;
-      margin-bottom: 10px;
-      font-weight: bold;
-      animation: fadeIn 0.3s ease;
+    /* Scrollbar */
+    #linksContainer::-webkit-scrollbar {
+      width: 8px;
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+    #linksContainer::-webkit-scrollbar-thumb {
+      background-color: #00b25c66;
+      border-radius: 4px;
+    }
+
+    #linksContainer::-webkit-scrollbar-track {
+      background-color: #e0f6e7;
     }
 
     @media (max-width: 768px) {
       input, select, button {
         font-size: 1.1em;
-        padding: 10px 12px;
+        padding: 12px 14px;
       }
     }
   </style>
@@ -187,18 +191,15 @@
 <body>
   <div class="logo">
     <div class="logo-shape"></div>
-    <div class="logo-text">CoolVoce ❤️💚</div>
+    <div class="logo-text">CoolVoce</div>
+    <div class="hearts">❤️💚</div>
   </div>
-
-  <h1>Generatore link offerte CoopVoce</h1>
-
-  <div id="errorMsg"></div>
 
   <div class="controls">
     <div>
-      <label for="offerSelect">OFFERTA</label><br>
+      <label for="offerSelect">OFFERTA?</label>
       <select id="offerSelect">
-        <option value="">— Seleziona un'offerta —</option>
+        <option value="">SELEZIONA</option>
         <option value="EVO20_MNPANN">EVO20_MNPANN</option>
         <option value="EVO50_MNPGRT2">EVO50_MNPGRT2</option>
         <option value="EVO150_MNPGRT5">EVO150_MNPGRT5</option>
@@ -207,35 +208,35 @@
         <option value="EXT300MNPGRT4">EXT300MNPGRT4</option>
         <option value="EVOUNMNPATGRT">EVOUNMNPATGRT</option>
       </select>
+      <div id="offerDescription" class="offer-description"></div>
     </div>
 
     <div>
-      <label for="customOffer">CODICE PERSONALIZZATO</label><br>
-      <input type="text" id="customOffer" placeholder="Inserisci un codice offerta">
+      <label for="customOffer">CODICE?</label>
+      <input type="text" id="customOffer" placeholder="CODICE">
     </div>
 
     <div>
-      <label for="simType">SIM</label><br>
+      <label for="simType">SIM?</label>
       <select id="simType">
-        <option value="SPEDIZIONE">SIM fisica</option>
+        <option value="SPEDIZIONE">SIM</option>
         <option value="ESIM">eSIM</option>
       </select>
     </div>
 
     <div>
-      <label for="activationType">ATTIVAZIONE</label><br>
+      <label for="activationType">ATTIVAZIONE?</label>
       <select id="activationType">
-        <option value="1">NUOVO</option>
+        <option value="1">NUOVA</option>
         <option value="2">MNP</option>
       </select>
     </div>
 
-    <div style="align-self: end;">
+    <div style="align-self: flex-end;">
       <button id="generateBtn">GENERA</button>
     </div>
   </div>
 
-  <div id="offerDescription"></div>
   <div id="linksContainer"></div>
 
   <script>
@@ -267,13 +268,12 @@
     const offerDescription = document.getElementById("offerDescription");
     const generateBtn = document.getElementById("generateBtn");
     const linksContainer = document.getElementById("linksContainer");
-    const errorMsg = document.getElementById("errorMsg");
 
     offerSelect.addEventListener("change", () => {
       const offer = offerSelect.value;
       const customOfferInput = document.getElementById("customOffer");
 
-      // Svuota campo personalizzato se si sceglie un'offerta
+      // Svuota il campo codice personalizzato se viene selezionata un’offerta
       if (offer && customOfferInput.value.trim() !== "") {
         customOfferInput.value = "";
       }
@@ -289,17 +289,12 @@
     generateBtn.addEventListener("click", () => {
       const simType = document.getElementById("simType").value;
       const activationType = document.getElementById("activationType").value;
-      const offerId = offerSelect.value || document.getElementById("customOffer").value.trim();
+      const offer = offerSelect.value || document.getElementById("customOffer").value.trim();
 
-      errorMsg.textContent = "";
-      if (!offerId) {
-        errorMsg.textContent = "⚠️ Inserisci o seleziona un codice offerta!";
-        errorMsg.className = "error";
-        return;
-      }
+      if (!offer) return;
 
       const prefix = simType === "ESIM" ? "ES_" : "";
-      const link = `https://shop.coopvoce.it/?tipoFlusso=${simType}&tipoAttivazione=${activationType}&codiceCampagna=${prefix}${offerId}`;
+      const link = `https://shop.coopvoce.it/?tipoFlusso=${simType}&tipoAttivazione=${activationType}&codiceCampagna=${prefix}${offer}`;
 
       const box = document.createElement("div");
       box.className = "link-box highlight";
