@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>CoolVoce ❤️💚</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     html, body {
       height: 100%;
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
     }
 
     body {
@@ -24,68 +27,75 @@
       align-items: center;
       justify-content: center;
       gap: 12px;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
 
     .logo-shape {
-      width: 38px;
-      height: 38px;
+      width: 40px;
+      height: 40px;
       background: linear-gradient(145deg, #b30000, #00b25c);
       border-radius: 10px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+      box-shadow: 0 3px 8px rgba(0,0,0,0.12);
       transform: rotate(-10deg);
     }
 
     .logo-text {
       font-size: 2.2em;
-      font-weight: bold;
+      font-weight: 700;
       color: #b30000;
-      letter-spacing: 1px;
+      letter-spacing: 0.6px;
     }
 
     .hearts {
-      font-size: 1.8em;
+      font-size: 1.7em;
       margin-left: 6px;
     }
 
-    /* Controlli */
+    /* Controlli: riga allineata */
     .controls {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 12px;
       justify-content: center;
-      align-items: end;
+      align-items: flex-end; /* allinea i campi in basso (label sopra) */
       max-width: 1200px;
       width: 100%;
-      margin: 0 auto 20px auto;
+      margin: 0 auto;
     }
 
-    .controls div {
+    .controls .field {
       flex: 1 1 220px;
       display: flex;
       flex-direction: column;
+      min-width: 150px;
     }
 
     label {
-      font-weight: bold;
-      font-size: 1.1em;
+      font-weight: 700;
+      font-size: 0.95em;
       margin-bottom: 6px;
+      color: #111;
     }
 
+    /* dimensione uniforme per input/select/button per evitare disallineamenti */
     input, select, button {
-      font-size: 1.3em;
-      padding: 14px 16px;
+      font-size: 1.15em;
+      padding: 12px 14px;
       border-radius: 8px;
       border: 1px solid #ccc;
       box-sizing: border-box;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-      width: 100%;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+      min-height: 48px;
+      line-height: 1.1;
+      background: #fff;
     }
+
+    input::placeholder { color: #999; }
 
     input:focus, select:focus, button:hover {
       transform: translateY(-3px);
-      box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.12);
       outline: none;
     }
 
@@ -93,18 +103,21 @@
       background-color: #00b25c;
       color: white;
       border: none;
-      font-weight: bold;
-      padding: 16px 22px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: 0.6px;
     }
 
     button.copied {
       background-color: #28a745 !important;
-      animation: pulse 0.5s ease-in-out;
+      animation: pulse 0.45s ease-in-out;
     }
-
     @keyframes pulse {
       0% { transform: scale(1); }
-      50% { transform: scale(1.1); }
+      50% { transform: scale(1.06); }
       100% { transform: scale(1); }
     }
 
@@ -116,89 +129,87 @@
       gap: 10px;
       max-width: 1200px;
       width: 100%;
-      margin: auto;
+      margin: 14px auto 30px auto;
       background: #f9fff9;
-      border: 2px solid #00b25c33;
+      border: 2px solid #00b25c22;
       border-radius: 10px;
       padding: 10px;
+      min-height: 220px;
       overflow-y: auto;
     }
 
     .link-box {
-      background: white;
-      padding: 14px;
+      background: #ffffff;
+      padding: 12px 14px;
       border-radius: 8px;
-      font-size: 1.2em;
+      font-size: 1.02em;
       word-break: break-all;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+      border: 1px solid transparent;
       opacity: 0;
       transform: translateY(10px);
-      animation: fadeInUp 0.4s ease forwards;
+      animation: fadeInUp 0.35s ease forwards;
+    }
+
+    /* bordo speciale per l'ultimo link generato */
+    .link-box.last {
+      border: 2px solid #00b25c;
+      box-shadow: 0 6px 16px rgba(0,178,92,0.10);
     }
 
     .link-box a {
-      color: #00b25c;
+      color: #008945;
       text-decoration: none;
-      font-weight: bold;
+      font-weight: 700;
     }
-
-    .link-box a:hover {
-      text-decoration: underline;
-    }
-
-    .highlight {
-      background-color: #d6ffe3;
-    }
+    .link-box a:hover { text-decoration: underline; }
 
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    .offer-description {
-      font-size: 1em;
-      color: #333;
-      background: #f8fff9;
-      border-left: 4px solid #00b25c;
-      padding: 8px 12px;
-      margin-top: 8px;
-      border-radius: 6px;
-      display: none;
+    /* Descrizione sotto il pulsante */
+    #offerDescription {
+      max-width: 1200px;
+      margin: 14px auto 0 auto;
+      background: #fff6f6;
+      border-left: 4px solid #b30000;
+      padding: 12px 14px;
+      border-radius: 8px;
+      display: none; /* mostrata quando c'è selezione di offerta */
+      font-size: 0.98em;
+      color: #222;
     }
 
     /* Scrollbar */
-    #linksContainer::-webkit-scrollbar {
-      width: 8px;
+    #linksContainer::-webkit-scrollbar { width: 8px; }
+    #linksContainer::-webkit-scrollbar-thumb { background-color: #00b25c66; border-radius: 6px; }
+    #linksContainer::-webkit-scrollbar-track { background-color: #e7f7ec; }
+
+    @media (max-width: 900px) {
+      .controls { gap: 10px; }
+      .controls .field { flex: 1 1 180px; }
     }
 
-    #linksContainer::-webkit-scrollbar-thumb {
-      background-color: #00b25c66;
-      border-radius: 4px;
-    }
-
-    #linksContainer::-webkit-scrollbar-track {
-      background-color: #e0f6e7;
-    }
-
-    @media (max-width: 768px) {
-      input, select, button {
-        font-size: 1.1em;
-        padding: 12px 14px;
-      }
+    @media (max-width: 520px) {
+      .controls { align-items: stretch; }
+      .controls .field { min-width: 100%; }
+      input, select, button { min-height: 46px; font-size: 1.02em; }
     }
   </style>
 </head>
 <body>
   <div class="logo">
-    <div class="logo-shape"></div>
+    <div class="logo-shape" aria-hidden="true"></div>
     <div class="logo-text">CoolVoce</div>
     <div class="hearts">❤️💚</div>
   </div>
 
-  <div class="controls">
-    <div>
+  <div class="controls" role="group" aria-label="Generatore">
+    <div class="field">
       <label for="offerSelect">OFFERTA?</label>
-      <select id="offerSelect">
+      <select id="offerSelect" aria-describedby="offerHelp">
         <option value="">SELEZIONA</option>
         <option value="EVO20_MNPANN">EVO20_MNPANN</option>
         <option value="EVO50_MNPGRT2">EVO50_MNPGRT2</option>
@@ -208,15 +219,14 @@
         <option value="EXT300MNPGRT4">EXT300MNPGRT4</option>
         <option value="EVOUNMNPATGRT">EVOUNMNPATGRT</option>
       </select>
-      <div id="offerDescription" class="offer-description"></div>
     </div>
 
-    <div>
+    <div class="field">
       <label for="customOffer">CODICE?</label>
-      <input type="text" id="customOffer" placeholder="CODICE">
+      <input id="customOffer" type="text" placeholder="CODICE" autocomplete="off" />
     </div>
 
-    <div>
+    <div class="field">
       <label for="simType">SIM?</label>
       <select id="simType">
         <option value="SPEDIZIONE">SIM</option>
@@ -224,7 +234,7 @@
       </select>
     </div>
 
-    <div>
+    <div class="field">
       <label for="activationType">ATTIVAZIONE?</label>
       <select id="activationType">
         <option value="1">NUOVA</option>
@@ -232,12 +242,18 @@
       </select>
     </div>
 
-    <div style="align-self: flex-end;">
+    <div class="field" style="flex: 0 0 160px;">
+      <!-- Pulsante allineato in basso grazie a align-items:flex-end sulla row -->
+      <label style="visibility:hidden; height:0; margin:0; padding:0;">&nbsp;</label>
       <button id="generateBtn">GENERA</button>
     </div>
   </div>
 
-  <div id="linksContainer"></div>
+  <!-- Descrizione posizionata sotto il pulsante GENERA (come richiesto) -->
+  <div id="offerDescription" aria-live="polite"></div>
+
+  <!-- Contenitore link -->
+  <div id="linksContainer" aria-live="polite"></div>
 
   <script>
     const offers = {
@@ -264,58 +280,103 @@
       }
     };
 
-    const offerSelect = document.getElementById("offerSelect");
-    const offerDescription = document.getElementById("offerDescription");
-    const generateBtn = document.getElementById("generateBtn");
-    const linksContainer = document.getElementById("linksContainer");
+    const offerSelect = document.getElementById('offerSelect');
+    const customOffer = document.getElementById('customOffer');
+    const offerDescription = document.getElementById('offerDescription');
+    const generateBtn = document.getElementById('generateBtn');
+    const linksContainer = document.getElementById('linksContainer');
 
-    offerSelect.addEventListener("change", () => {
-      const offer = offerSelect.value;
-      const customOfferInput = document.getElementById("customOffer");
-
-      // Svuota il campo codice personalizzato se viene selezionata un’offerta
-      if (offer && customOfferInput.value.trim() !== "") {
-        customOfferInput.value = "";
+    // Selezione offerta: svuota custom e mostra descrizione
+    offerSelect.addEventListener('change', () => {
+      const val = offerSelect.value;
+      if (val && customOffer.value.trim() !== '') {
+        // comportamento silenzioso: svuota l'input personalizzato se si seleziona una offerta
+        customOffer.value = '';
       }
-
-      if (offers[offer]) {
-        offerDescription.innerHTML = offers[offer].desc;
-        offerDescription.style.display = "block";
+      if (offers[val]) {
+        offerDescription.innerHTML = offers[val].desc;
+        offerDescription.style.display = 'block';
       } else {
-        offerDescription.style.display = "none";
+        offerDescription.style.display = 'none';
+        offerDescription.innerHTML = '';
       }
     });
 
-    generateBtn.addEventListener("click", () => {
-      const simType = document.getElementById("simType").value;
-      const activationType = document.getElementById("activationType").value;
-      const offer = offerSelect.value || document.getElementById("customOffer").value.trim();
+    // Digitazione codice personalizzato: svuota selezione offerta e nasconde descrizione
+    customOffer.addEventListener('input', () => {
+      const v = customOffer.value.trim();
+      if (v !== '') {
+        if (offerSelect.value !== '') {
+          offerSelect.value = '';
+        }
+        offerDescription.style.display = 'none';
+      } else {
+        // se l'utente cancella tutto, lascia la descrizione nascosta finché non seleziona un'offerta
+        offerDescription.style.display = 'none';
+      }
+    });
 
-      if (!offer) return;
+    // Genera link
+    generateBtn.addEventListener('click', () => {
+      const simType = document.getElementById('simType').value;
+      const activationType = document.getElementById('activationType').value;
+      const offerCode = (offerSelect.value || customOffer.value || '').trim();
 
-      const prefix = simType === "ESIM" ? "ES_" : "";
-      const link = `https://shop.coopvoce.it/?tipoFlusso=${simType}&tipoAttivazione=${activationType}&codiceCampagna=${prefix}${offer}`;
+      if (!offerCode) {
+        // piccolo feedback visivo: pulsante scuote se manca il codice (non invasivo)
+        generateBtn.animate([
+          { transform: 'translateY(0)' },
+          { transform: 'translateX(-6px)' },
+          { transform: 'translateX(6px)' },
+          { transform: 'translateY(0)' }
+        ], { duration: 300, iterations: 1 });
+        return;
+      }
 
-      const box = document.createElement("div");
-      box.className = "link-box highlight";
-      box.innerHTML = `<a href="${link}" target="_blank">${link}</a>`;
+      const prefix = simType === 'ESIM' ? 'ES_' : '';
+      const link = `https://shop.coopvoce.it/?tipoFlusso=${encodeURIComponent(simType)}&tipoAttivazione=${encodeURIComponent(activationType)}&codiceCampagna=${encodeURIComponent(prefix + offerCode)}`;
+
+      // crea box link e lo aggiunge in cima
+      const box = document.createElement('div');
+      box.className = 'link-box';
+      box.innerHTML = `<a href="${link}" target="_blank" rel="noopener noreferrer">${link}</a>`;
+
+      // rimuove la classe 'last' dal precedente ultimo e la applica al nuovo
+      const prevLast = linksContainer.querySelector('.link-box.last');
+      if (prevLast) prevLast.classList.remove('last');
+      box.classList.add('last');
+
       linksContainer.prepend(box);
 
-      const tempInput = document.createElement("input");
-      document.body.appendChild(tempInput);
-      tempInput.value = link;
-      tempInput.select();
-      document.execCommand("copy");
-      document.body.removeChild(tempInput);
+      // copia negli appunti (navigator.clipboard preferito)
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).catch(() => {
+          // fallback
+          const t = document.createElement('input');
+          document.body.appendChild(t);
+          t.value = link;
+          t.select();
+          document.execCommand('copy');
+          document.body.removeChild(t);
+        });
+      } else {
+        const t = document.createElement('input');
+        document.body.appendChild(t);
+        t.value = link;
+        t.select();
+        document.execCommand('copy');
+        document.body.removeChild(t);
+      }
 
-      generateBtn.textContent = "COPIATO!";
-      generateBtn.classList.add("copied");
+      // effetto copia sul pulsante
+      generateBtn.textContent = 'COPIATO!';
+      generateBtn.classList.add('copied');
       setTimeout(() => {
-        generateBtn.textContent = "GENERA";
-        generateBtn.classList.remove("copied");
-      }, 2000);
+        generateBtn.textContent = 'GENERA';
+        generateBtn.classList.remove('copied');
+      }, 1500);
 
-      setTimeout(() => box.classList.remove("highlight"), 1000);
+      // se volessi, qui potremmo auto-svuotare customOffer; per ora manteniamo il valore
     });
   </script>
 </body>
