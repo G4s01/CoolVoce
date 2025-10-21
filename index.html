@@ -184,6 +184,12 @@
       margin-bottom: 8px;
       font-size: 1.05rem;
     }
+    .offer-description .offer-key {
+      font-weight: 600;
+      color: #6b6b6b;
+      font-size: .9rem;
+      margin-left: 8px;
+    }
     .offer-description .offer-desc {
       margin-top: 4px;
     }
@@ -291,16 +297,10 @@
     <div class="controls-grid">
       <div class="control">
         <label for="offerSelect">OFFERTA?</label>
-        <select id="offerSelect">
+        <!-- aria-describedby punta alla regione dove viene mostrata label+desc -->
+        <select id="offerSelect" aria-describedby="offerDescription">
           <option value="">SELEZIONA</option>
-          <option value="EVO20_MNPANN">EVO20_MNPANN</option>
-          <option value="EVO50_MNPGRT2">EVO50_MNPGRT2</option>
-          <option value="EVO100_MNP4">EVO100_MNP4</option>
-          <option value="EVO150_MNPGRT5">EVO150_MNPGRT5</option>
-          <option value="EVO200_MNPGRT7">EVO200_MNPGRT7</option>
-          <option value="EXT300MNPGRT5">EXT300MNPGRT5</option>
-          <option value="EXT300MNPGRT4">EXT300MNPGRT4</option>
-          <option value="EVOUNMNPATGRT">EVOUNMNPATGRT</option>
+          <!-- opzioni popolate dinamicamente -->
         </select>
       </div>
 
@@ -330,7 +330,8 @@
       </div>
     </div>
 
-    <div id="offerDescription" class="offer-description"></div>
+    <!-- aria-live: annuncia i cambiamenti ai lettori di schermo (polite) -->
+    <div id="offerDescription" class="offer-description" aria-live="polite" aria-atomic="true"></div>
     <div id="linksContainer"></div>
   </div>
 
@@ -373,19 +374,45 @@
       const offerDescription = qs('offerDescription');
       const linksContainer = qs('linksContainer');
 
+      // Helper: crea un id sicuro per gli elementi (evita caratteri non validi)
+      function makeId(s){
+        return String(s).replace(/[^a-zA-Z0-9\-_:.]/g, '-');
+      }
+
+      // Popola il select usando label come testo e key come value
+      function populateOfferSelect() {
+        offerSelect.innerHTML = '<option value="">SELEZIONA</option>';
+        if (!offers || Object.keys(offers).length === 0) return;
+        Object.keys(offers).forEach(key => {
+          const opt = document.createElement('option');
+          opt.value = key;
+          opt.textContent = (offers[key] && offers[key].label) ? offers[key].label : key;
+          offerSelect.appendChild(opt);
+        });
+      }
+
       function hideDescription(){
         offerDescription.style.display = 'none';
         offerDescription.innerHTML = '';
         offerDescription.removeAttribute('data-offer-key');
       }
 
+      // Mostra label + desc; la label è un heading (role) per migliorare semantica/screen readers
       function showOffer(key){
         if (!key || !offers[key]) return hideDescription();
         const o = offers[key];
         const label = o.label || key;
         const desc = o.desc || '';
-        // aggiunge un elemento con id = key e mostra label + desc
-        offerDescription.innerHTML = `<div class="offer-label" id="${key}">${label}</div><div class="offer-desc">${desc}</div>`;
+        const labelId = makeId('label-' + key);
+        const descId = makeId('desc-' + key);
+        // escape semplice per label e key
+        function escapeHtml(str){
+          return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+        offerDescription.innerHTML =
+          '<div class="offer-label" id="'+labelId+'" role="heading" aria-level="3">'+escapeHtml(label)+
+          ' <span class="offer-key" aria-hidden="true">('+escapeHtml(key)+')</span></div>'+
+          '<div class="offer-desc" id="'+descId+'">'+desc+'</div>';
         offerDescription.style.display = 'block';
         offerDescription.setAttribute('data-offer-key', key);
       }
@@ -434,6 +461,9 @@
         requestAnimationFrame(() => t.style.opacity = '1');
         setTimeout(() => { t.style.opacity = '0'; setTimeout(()=> t.remove(),300); }, 1500);
       }
+
+      // Popola il select subito (offers.js è già incluso sopra)
+      populateOfferSelect();
 
       offerSelect.addEventListener('change', () => {
         const sel = offerSelect.value;
