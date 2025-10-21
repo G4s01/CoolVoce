@@ -7,5 +7,5 @@ window.CoolVoceOffers = {
   "EVO200_MNPGRT7": { label:"€7.90 EVO200", desc: "📱 MIN ILL, 1000 SMS e 200GB<br>💰 7.90€/mese<br>(NESSUN COSTO)<br>📅 SCADENZA: 12/2024" },
   "EXT300MNPGRT5": { label:"€7.90 EVO300", desc: "📱 MIN ILL, 1000 SMS e 300GB<br>💰 7.90€/mese<br>(ATTIVAZIONE FREE)<br>📅 SCADENZA: 06/2025" },
   "EXT300MNPGRT4": { label:"€9.90 EVO300", desc: "📱 MIN ILL, 1000 SMS e 300GB<br>💰 9.90€/mese<br>(NESSUN COSTO)<br>📅 SCADENZA: 03/2025" },
-  "EVOUNMPATGRT": { label:"€9.90 EVO UNLIMITED", desc: "📱 MIN ILL, 1000 SMS e GB ILL (500GB) <br>💰 9.90€/mese<br>(ATTIVAZIONE FREE)<br>📅 SCADENZA: 11/2024" }
+  "EVOUNMNPATGRT": { label:"€9.90 EVO UNLIMITED", desc: "📱 MIN ILL, 1000 SMS e GB ILL (500GB) <br>💰 9.90€/mese<br>(ATTIVAZIONE FREE)<br>📅 SCADENZA: 11/2024" }
 };
