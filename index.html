@@ -179,6 +179,14 @@
       max-width: 100%;
       transition: background 0.4s ease, color 0.4s ease, border 0.4s ease;
     }
+    .offer-description .offer-label {
+      font-weight: 800;
+      margin-bottom: 8px;
+      font-size: 1.05rem;
+    }
+    .offer-description .offer-desc {
+      margin-top: 4px;
+    }
 
     #linksContainer {
       margin-top: 10px;
@@ -368,11 +376,20 @@
       function hideDescription(){
         offerDescription.style.display = 'none';
         offerDescription.innerHTML = '';
+        offerDescription.removeAttribute('data-offer-key');
       }
-      function showDescription(text){
-        offerDescription.innerHTML = text;
+
+      function showOffer(key){
+        if (!key || !offers[key]) return hideDescription();
+        const o = offers[key];
+        const label = o.label || key;
+        const desc = o.desc || '';
+        // aggiunge un elemento con id = key e mostra label + desc
+        offerDescription.innerHTML = `<div class="offer-label" id="${key}">${label}</div><div class="offer-desc">${desc}</div>`;
         offerDescription.style.display = 'block';
+        offerDescription.setAttribute('data-offer-key', key);
       }
+
       function clearLatest(){
         const p = linksContainer.querySelector('.link-box.latest');
         if (p) p.classList.remove('latest');
@@ -422,7 +439,7 @@
         const sel = offerSelect.value;
         if (sel) {
           customInput.value = '';
-          if (offers[sel]) showDescription(offers[sel].desc);
+          if (offers[sel]) showOffer(sel);
           else hideDescription();
         } else hideDescription();
       });
@@ -434,7 +451,7 @@
           hideDescription();
         } else {
           const sel = offerSelect.value;
-          if (sel && offers[sel]) showDescription(offers[sel].desc);
+          if (sel && offers[sel]) showOffer(sel);
         }
       });
 
