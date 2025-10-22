@@ -31,15 +31,24 @@
       --button-gradient: linear-gradient(90deg, var(--green), var(--red));
     }
 
-    html, body {
-      height: 100%;
+    /* --- FIXED: apply background to BODY (not HTML) so body.dark variable overrides work ---
+       use min-height to allow the document to grow beyond viewport without leaving white gap */
+    html {
+      min-height: 100%;
+      box-sizing: border-box;
+    }
+    *, *::before, *::after { box-sizing: inherit; }
+    body {
+      min-height: 100%;
       margin: 0;
       font-family: 'Segoe UI', system-ui, -apple-system, "Helvetica Neue", Arial;
+      /* background must be on body so body.dark custom properties take effect */
       background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
       color: var(--text);
       -webkit-font-smoothing: antialiased;
       transition: background 0.4s ease, color 0.4s ease;
     }
+    /* --- end fix --- */
 
     .container {
       max-width: 1200px;
