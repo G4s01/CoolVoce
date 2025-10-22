@@ -1,9 +1,7 @@
 // js/link-generator.js
-// Miglioramenti per la generazione link: costruzione sicura, sanitizzazione minimal,
-// accessibilità (aria-live), cronologia e separazione di responsabilità.
-//
-// Modificato: rimosso il copia automatico del link generato. Ora la copia avviene solo
-// quando l'utente preme il pulsante "COPIA".
+// Generatore link per CoolVoce - versione "strict A format"
+// - accetta SOLO desc come array di righe (format A).
+// - se desc non è array, non viene renderizzata la descrizione e viene mostrato un errore in console.
 
 (function () {
   // Config
@@ -22,14 +20,16 @@
       .replace(/'/g, '&#039;');
   }
 
-  // Permettiamo solo <br> come markup nel campo desc (presupponendo dati interni/fidati).
-  function sanitizeDesc(raw = '') {
-    if (!raw) return '';
-    // Temporaneo placeholder per i <br>
-    const BR = '[[[BR]]]';
-    const withPlaceholders = raw.replace(/<br\s*\/?>/gi, BR);
-    const escaped = escapeHtml(withPlaceholders);
-    return escaped.replace(new RegExp(BR, 'g'), '<br/>');
+  // sanitizeDesc: supporta SOLO array di stringhe.
+  // Se non viene passato un array, ritorna stringa vuota e logga un errore per la migrazione.
+  function sanitizeDescArray(desc) {
+    if (!desc) return '';
+    if (!Array.isArray(desc)) {
+      console.error('CoolVoce: formato "desc" non valido. Ora è richiesto un array di righe (format A). Esempio: "desc": ["riga1","riga2"]. La descrizione non verrà visualizzata per questa offerta.', desc);
+      return '';
+    }
+    // escape ogni riga e unisci con <br/>
+    return desc.map(line => escapeHtml(String(line))).join('<br/>');
   }
 
   function ensureAriaLive() {
@@ -39,7 +39,6 @@
       region.id = 'cv-aria-live';
       region.setAttribute('aria-live', 'polite');
       region.setAttribute('role', 'status');
-      // visivamente nascosto ma accessibile
       Object.assign(region.style, {
         position: 'absolute',
         width: '1px',
@@ -55,7 +54,7 @@
 
   async function copyToClipboard(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      try { await navigator.clipboard.writeText(text); return true; } catch (e) { /* continue to fallback */ }
+      try { await navigator.clipboard.writeText(text); return true; } catch (e) { /* fallback */ }
     }
     try {
       const ta = document.createElement('textarea');
@@ -78,7 +77,7 @@
     setTimeout(() => { region.textContent = ''; }, 1500);
   }
 
-  // Costruisce link usando URLSearchParams per sicurezza/leggibilità
+  // Costruisce link usando URLSearchParams
   function buildCampaignLink({ tipoFlusso, tipoAttivazione, codiceCampagna }) {
     const params = new URLSearchParams({
       tipoFlusso: tipoFlusso || '',
@@ -92,12 +91,11 @@
   function normalizeOfferCode(raw) {
     if (!raw) return { code: '', valid: false };
     const trimmed = raw.trim();
-    // accetta lettere, numeri, trattino e underscore; se vuoi altri simboli aggiungi qui
     const isValid = /^[A-Za-z0-9\-_]+$/.test(trimmed);
     return { code: trimmed, valid: isValid };
   }
 
-  // Cronologia semplice in localStorage
+  // Cronologia in localStorage
   function loadHistory() {
     try {
       return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
@@ -114,7 +112,7 @@
     } catch (e) { /* noop */ }
   }
 
-  // Crea box link usando DOM APIs (no innerHTML)
+  // Crea box link usando DOM APIs
   function createLinkBox(link) {
     const box = document.createElement('div');
     box.className = 'link-box latest';
@@ -145,7 +143,7 @@
     copyBtn.textContent = 'COPIA';
     copyBtn.addEventListener('click', async () => {
       const ok = await copyToClipboard(link);
-      copyBtn.textContent = ok ? 'COPIATO!' : 'Errore';
+      copyBtn.textContent = ok ? 'Copiato!' : 'Errore';
       announce(ok ? 'Link copiato negli appunti.' : 'Impossibile copiare il link.');
       setTimeout(() => { copyBtn.textContent = 'COPIA'; }, 1200);
     });
@@ -159,7 +157,7 @@
     return box;
   }
 
-  // Inizializzazione che prende gli elementi esistenti e imposta handler
+  // Inizializzazione UI
   function initUI() {
     const offerSelect = qs('offerSelect');
     const customInput = qs('customOffer');
@@ -184,15 +182,25 @@
       if (!key || !offers || !offers[key]) return hideDescription();
       const o = offers[key];
       const label = o.label || key;
-      const desc = o.desc || '';
+      const desc = o.desc;
       const labelId = String('label-' + key).replace(/[^a-zA-Z0-9\-_:.]/g, '-');
       const descId = String('desc-' + key).replace(/[^a-zA-Z0-9\-_:.]/g, '-');
+
+      // Strict: desc must be an array
+      const descHtml = sanitizeDescArray(desc);
       offerDescription.innerHTML =
         '<div class="offer-label" id="'+labelId+'" role="heading" aria-level="3">'+escapeHtml(label)+
         ' <span class="offer-key" aria-hidden="true">('+escapeHtml(key)+')</span></div>'+
-        '<div class="offer-desc" id="'+descId+'">'+sanitizeDesc(desc)+'</div>';
-      offerDescription.style.display = 'block';
-      offerDescription.setAttribute('data-offer-key', key);
+        '<div class="offer-desc" id="'+descId+'">'+descHtml+'</div>';
+
+      // Mostra solo se c'è qualcosa da mostrare
+      if (descHtml) {
+        offerDescription.style.display = 'block';
+        offerDescription.setAttribute('data-offer-key', key);
+      } else {
+        offerDescription.style.display = 'none';
+        offerDescription.removeAttribute('data-offer-key');
+      }
     }
 
     function clearLatest() {
@@ -200,7 +208,7 @@
       if (p) p.classList.remove('latest');
     }
 
-    // Populate select from offers (offers is global window.CoolVoceOffers)
+    // Populate select from offers
     function populate(offers) {
       offerSelect.innerHTML = '<option value="">SELEZIONA</option>';
       if (!offers || Object.keys(offers).length === 0) return;
@@ -212,7 +220,6 @@
       });
     }
 
-    // Initialize with existing offers if present
     const offers = window.CoolVoceOffers || {};
     populate(offers);
 
@@ -271,15 +278,11 @@
 
       clearLatest();
       const box = createLinkBox(link);
-      // prepend
       linksContainer.prepend(box);
 
-      // persist history
       saveHistoryItem({ link, ts: Date.now() });
 
-      // Non copiare automaticamente: segnala soltanto che il link è pronto.
       announce('Link generato. Premi "COPIA" per copiare negli appunti.');
-      // small visual feedback on button
       generateBtn.classList.add('copied');
       const prevText = generateBtn.textContent;
       generateBtn.textContent = 'GENERATO';
@@ -289,7 +292,6 @@
       }, 1400);
     });
 
-    // small helper tooltip (reuse your existing showTooltip if present)
     function showTooltip(msg) {
       const t = document.createElement('div');
       t.textContent = msg;
@@ -324,7 +326,6 @@
     }
   }
 
-  // espone init solo internamente; avvia subito
   init();
 
 })();
