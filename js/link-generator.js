@@ -2,7 +2,8 @@
 // Miglioramenti per la generazione link: costruzione sicura, sanitizzazione minimal,
 // accessibilità (aria-live), cronologia e separazione di responsabilità.
 //
-// Include: init() che si registra all'evento 'offers:loaded' dispatchato dal loader.
+// Modificato: rimosso il copia automatico del link generato. Ora la copia avviene solo
+// quando l'utente preme il pulsante "COPIA".
 
 (function () {
   // Config
@@ -144,7 +145,7 @@
     copyBtn.textContent = 'COPIA';
     copyBtn.addEventListener('click', async () => {
       const ok = await copyToClipboard(link);
-      copyBtn.textContent = ok ? 'COPIATO!' : 'ERRORE';
+      copyBtn.textContent = ok ? 'COPIATO!' : 'Errore';
       announce(ok ? 'Link copiato negli appunti.' : 'Impossibile copiare il link.');
       setTimeout(() => { copyBtn.textContent = 'COPIA'; }, 1200);
     });
@@ -276,12 +277,12 @@
       // persist history
       saveHistoryItem({ link, ts: Date.now() });
 
-      const ok = await copyToClipboard(link);
-      announce(ok ? 'Link copiato negli appunti.' : 'Impossibile copiare il link.');
+      // Non copiare automaticamente: segnala soltanto che il link è pronto.
+      announce('Link generato. Premi "COPIA" per copiare negli appunti.');
       // small visual feedback on button
       generateBtn.classList.add('copied');
       const prevText = generateBtn.textContent;
-      generateBtn.textContent = ok ? 'COPIATO!' : 'ERRORE';
+      generateBtn.textContent = 'GENERATO';
       setTimeout(() => {
         generateBtn.classList.remove('copied');
         generateBtn.textContent = prevText || 'GENERA';
