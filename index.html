@@ -31,11 +31,17 @@
       --button-gradient: linear-gradient(90deg, var(--green), var(--red));
     }
 
+    html {
+      min-height: 100%;
+      background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
+    }
     html, body {
-      height: 100%;
+      box-sizing: border-box;
+    }
+    body {
+      min-height: 100%;
       margin: 0;
       font-family: 'Segoe UI', system-ui, -apple-system, "Helvetica Neue", Arial;
-      background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
       color: var(--text);
       -webkit-font-smoothing: antialiased;
       transition: background 0.4s ease, color 0.4s ease;
