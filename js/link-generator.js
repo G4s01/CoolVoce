@@ -144,7 +144,7 @@
     copyBtn.textContent = 'COPIA';
     copyBtn.addEventListener('click', async () => {
       const ok = await copyToClipboard(link);
-      copyBtn.textContent = ok ? 'Copiato!' : 'Errore';
+      copyBtn.textContent = ok ? 'COPIATO!' : 'ERRORE';
       announce(ok ? 'Link copiato negli appunti.' : 'Impossibile copiare il link.');
       setTimeout(() => { copyBtn.textContent = 'COPIA'; }, 1200);
     });
