@@ -59,6 +59,15 @@
 
     <!-- aria-live: annuncia i cambiamenti ai lettori di schermo (polite) -->
     <div id="offerDescription" class="offer-description" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Links header: pulsante cestino con contatore -->
+    <div class="links-header" aria-hidden="false">
+      <button id="clearLinksBtn" class="clear-links-btn" aria-label="Svuota i link generati">
+        <span class="trash" aria-hidden="true">🗑️</span>
+        <span id="linksCountBadge" class="links-badge" aria-live="polite" aria-atomic="true">0</span>
+      </button>
+    </div>
+
     <div id="linksContainer"></div>
   </div>
 

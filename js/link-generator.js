@@ -3,9 +3,7 @@
 // Assumiamo formato A (desc: array di righe). Se DOMPurify non è disponibile viene usato fallback escape.
 // Aggiunta: ascolta l'evento 'offers:updated' e aggiorna la UI (repopola <select> e aggiorna descrizione corrente).
 // Ottimizzazione: applica il refresh automatico SOLO se il pannello offerte (.controls-grid) è visibile.
-// IntersectionObserver configurato con threshold 0.1 e rootMargin '0px 0px -15% 0px'.
-//
-// Fix: handlers now always read the current offers via getOffers() (no stale copy).
+// Entry animation per nuovi link e gestione coerente della classe "latest" quando si rimuovono elementi.
 
 (function () {
   const HISTORY_KEY = 'coolvoce-history';
@@ -33,19 +31,10 @@
       console.error('CoolVoce: formato "desc" non valido. È richiesto un array di righe (format A).');
       return '';
     }
-    // join le righe con <br/>
     const rawHtml = desc.map(d => String(d)).join('<br/>');
-
-    // se DOMPurify presente usalo con allowlist di tag limitata
     if (window.DOMPurify && typeof window.DOMPurify.sanitize === 'function') {
-      try {
-        return window.DOMPurify.sanitize(rawHtml, { ALLOWED_TAGS: ['br'] });
-      } catch (e) {
-        console.warn('DOMPurify errore, fallback a escape:', e);
-      }
+      try { return window.DOMPurify.sanitize(rawHtml, { ALLOWED_TAGS: ['br'] }); } catch (e) { console.warn('DOMPurify errore, fallback a escape:', e); }
     }
-
-    // fallback: escape ogni riga singolarmente e join con <br/>
     return desc.map(line => escapeHtml(String(line))).join('<br/>');
   }
 
@@ -121,34 +110,45 @@
       localStorage.setItem(HISTORY_KEY, JSON.stringify(unique.slice(0, HISTORY_LIMIT)));
     } catch (e) {}
   }
+  function removeHistoryLink(link) {
+    try {
+      const arr = loadHistory();
+      const filtered = arr.filter(i => i.link !== link);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(filtered));
+    } catch (e) {}
+  }
 
   function createLinkBox(link) {
     const box = document.createElement('div');
-    box.className = 'link-box latest';
+    box.className = 'link-box';
 
+    // left: main content (stack)
     const main = document.createElement('div');
     main.className = 'link-main';
-
     const a = document.createElement('a');
     a.href = link;
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
     a.textContent = link;
-
     main.appendChild(a);
 
-    const actions = document.createElement('div');
-    actions.className = 'link-actions';
+    // right: controls column
+    const controls = document.createElement('div');
+    controls.className = 'link-controls';
+
+    // actions column: APRI (top) then COPIA (bottom)
+    const actionsCol = document.createElement('div');
+    actionsCol.className = 'actions-column';
 
     const openBtn = document.createElement('button');
     openBtn.type = 'button';
-    openBtn.className = 'open-btn';
+    openBtn.className = 'open';
     openBtn.textContent = 'APRI';
     openBtn.addEventListener('click', () => window.open(link, '_blank'));
 
     const copyBtn = document.createElement('button');
     copyBtn.type = 'button';
-    copyBtn.className = 'copy-btn';
+    copyBtn.className = 'copy';
     copyBtn.textContent = 'COPIA';
     copyBtn.addEventListener('click', async () => {
       const ok = await copyToClipboard(link);
@@ -157,11 +157,40 @@
       setTimeout(() => { copyBtn.textContent = 'COPIA'; }, 1200);
     });
 
-    actions.appendChild(openBtn);
-    actions.appendChild(copyBtn);
+    actionsCol.appendChild(openBtn);
+    actionsCol.appendChild(copyBtn);
+
+    // delete button to the right, tall
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'delete-btn';
+    deleteBtn.setAttribute('aria-label', 'Rimuovi link');
+    const xSpan = document.createElement('span');
+    xSpan.className = 'x';
+    xSpan.textContent = '✕';
+    deleteBtn.appendChild(xSpan);
+
+    deleteBtn.addEventListener('click', () => {
+      const wasLatest = box.classList.contains('latest');
+      // remove the DOM node
+      if (box && box.parentNode) box.parentNode.removeChild(box);
+      // remove from history storage
+      try { removeHistoryLink(link); } catch (e) {}
+      // notify app to update badge/history and whether it was latest
+      try {
+        document.dispatchEvent(new CustomEvent('link:removed', { detail: { link, removedWasLatest: wasLatest } }));
+      } catch (e) {}
+    });
+
+    controls.appendChild(actionsCol);
+    controls.appendChild(deleteBtn);
 
     box.appendChild(main);
-    box.appendChild(actions);
+    box.appendChild(controls);
+
+    // entry animation
+    box.classList.add('enter');
+    box.addEventListener('animationend', () => box.classList.remove('enter'), { once: true });
 
     return box;
   }
@@ -177,6 +206,10 @@
     const offerDescription = qs('offerDescription');
     const linksContainer = qs('linksContainer');
     const controlsGrid = document.querySelector('.controls-grid');
+
+    // clear button + badge
+    const clearBtn = qs('clearLinksBtn');
+    const linksBadge = qs('linksCountBadge');
 
     if (!offerSelect || !customInput || !simType || !activationType || !generateBtn || !offerDescription || !linksContainer) {
       console.warn('Elementi UI mancanti - init aborted');
@@ -215,14 +248,14 @@
       }
     }
 
+    // remove all .latest classes (robust)
     function clearLatest() {
-      const p = linksContainer.querySelector('.link-box.latest');
-      if (p) p.classList.remove('latest');
+      const items = linksContainer.querySelectorAll('.link-box.latest');
+      items.forEach(it => it.classList.remove('latest'));
     }
 
     // Populate select from offers (offers is global window.CoolVoceOffers)
     function populate(offers) {
-      // preserve current selection where possible
       const prevSelected = offerSelect.value;
       offerSelect.innerHTML = '<option value="">SELEZIONA</option>';
       if (!offers || Object.keys(offers).length === 0) return;
@@ -232,7 +265,6 @@
         opt.textContent = (offers[key] && offers[key].label) ? offers[key].label : key;
         offerSelect.appendChild(opt);
       });
-      // restore selection if still available
       if (prevSelected) {
         const stillExists = !!(offers && offers[prevSelected]);
         if (stillExists) {
@@ -245,6 +277,67 @@
 
     // Initialize with existing offers if present
     populate(getOffers());
+
+    // update badge count based on DOM (source of truth).
+    // If DOM is empty but history exists, clear history to keep consistency.
+    function updateLinksCount() {
+      const domCount = linksContainer ? linksContainer.querySelectorAll('.link-box').length : 0;
+      const hist = loadHistory();
+      const histCount = Array.isArray(hist) ? hist.length : 0;
+
+      let count = domCount;
+      if (domCount === 0 && histCount > 0) {
+        try { localStorage.removeItem(HISTORY_KEY); } catch (e) { /* ignore */ }
+        count = 0;
+      }
+
+      if (linksBadge) linksBadge.textContent = String(count);
+      if (clearBtn) clearBtn.setAttribute('aria-label', `Svuota i link generati (${count} presenti)`);
+    }
+
+    // handle per-link removed events (dispatched by createLinkBox)
+    document.addEventListener('link:removed', function (ev) {
+      try {
+        const link = ev && ev.detail && ev.detail.link;
+        const removedWasLatest = ev && ev.detail && ev.detail.removedWasLatest;
+        if (link) removeHistoryLink(link);
+        // if the removed item was latest, ensure a new latest is set to first element
+        if (removedWasLatest) {
+          // slight delay to let DOM removal settle
+          requestAnimationFrame(() => {
+            const first = linksContainer.querySelector('.link-box');
+            if (first) {
+              // remove existing latest markers first for safety
+              linksContainer.querySelectorAll('.link-box.latest').forEach(it => it.classList.remove('latest'));
+              first.classList.add('latest');
+            }
+            updateLinksCount();
+            announce('Link rimosso.');
+          });
+          return;
+        }
+      } catch (e) {}
+      // update badge based on DOM
+      updateLinksCount();
+      announce('Link rimosso.');
+    });
+
+    // wire clear button (no confirmation)
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        const countNow = linksContainer ? linksContainer.querySelectorAll('.link-box').length : 0;
+        if (countNow === 0) {
+          announce('Non ci sono link da cancellare.');
+          try { localStorage.removeItem(HISTORY_KEY); } catch (e) {}
+          updateLinksCount();
+          return;
+        }
+        linksContainer.innerHTML = '';
+        try { localStorage.removeItem(HISTORY_KEY); } catch (e) {}
+        updateLinksCount();
+        announce('Elenco link svuotato.');
+      });
+    }
 
     offerSelect.addEventListener('change', () => {
       const sel = offerSelect.value;
@@ -300,11 +393,15 @@
       const rawCode = prefix + code;
       const link = buildCampaignLink({ tipoFlusso, tipoAttivazione, codiceCampagna: rawCode });
 
+      // remove any previous "latest" marker, then add the new box as latest
       clearLatest();
       const box = createLinkBox(link);
       linksContainer.prepend(box);
+      box.classList.add('latest');
 
       saveHistoryItem({ link, ts: Date.now() });
+
+      updateLinksCount();
 
       announce('Link generato. Premi "COPIA" per copiare negli appunti.');
       generateBtn.classList.add('copied');
@@ -344,13 +441,11 @@
 
       populate(currentOffers);
 
-      // If user has a custom input in progress, don't override it or change selection.
       if (prevCustom) {
         console.info('Offers refreshed in background; preserving custom input in progress.');
         return;
       }
 
-      // If previous selection still exists, show it again (refresh description)
       if (prevSelected) {
         if (currentOffers[prevSelected]) {
           showOffer(prevSelected, currentOffers);
@@ -362,6 +457,9 @@
         }
       }
     }
+
+    // initial badge update
+    updateLinksCount();
 
     // expose refresh and controlsGrid reference
     return { refresh, controlsGrid };
@@ -380,7 +478,6 @@
   // Avvia e registra listener per 'offers:updated' che richiama refresh() condizionato
   function init() {
     ensureAriaLive();
-    // create UI and get refresh handle + controlsGrid reference
     const uiHandle = initUI();
     const controlsGrid = uiHandle && uiHandle.controlsGrid ? uiHandle.controlsGrid : document.querySelector('.controls-grid');
 
@@ -393,7 +490,6 @@
       if (isElementVisibleInViewport(controlsGrid)) {
         uiHandle.refresh();
         pendingOffersUpdate = false;
-        // disconnect observer / remove fallback listeners if any
         if (observer) { observer.disconnect(); observer = null; }
         if (fallbackListenersAttached) {
           window.removeEventListener('scroll', onViewportCheck);
@@ -404,39 +500,25 @@
       }
     }
 
-    function onViewportCheck() {
-      applyUpdateIfVisible();
-    }
+    function onViewportCheck() { applyUpdateIfVisible(); }
 
     document.addEventListener('offers:updated', function (ev) {
       try {
-        // If controlsGrid visible now -> apply immediately
         if (isElementVisibleInViewport(controlsGrid)) {
           if (uiHandle && typeof uiHandle.refresh === 'function') uiHandle.refresh();
           console.info('offers:updated applied immediately (controls visible)');
         } else {
-          // Not visible: mark pending and set up observer/fallback to apply once visible
           pendingOffersUpdate = true;
           announce('Aggiornamento offerte disponibile.');
-          // Use IntersectionObserver if available for efficient detection
           if ('IntersectionObserver' in window && controlsGrid) {
             if (observer) observer.disconnect();
-            // Threshold: 0.1 (10%), rootMargin: '0px 0px -15% 0px' (anticipate slightly)
             observer = new IntersectionObserver((entries) => {
               for (const entry of entries) {
-                if (entry.isIntersecting) {
-                  applyUpdateIfVisible();
-                }
+                if (entry.isIntersecting) { applyUpdateIfVisible(); }
               }
             }, { root: null, threshold: 0.1, rootMargin: '0px 0px -15% 0px' });
-            try {
-              observer.observe(controlsGrid);
-            } catch (e) {
-              // observe may fail on detached elements; fallback to listeners
-              if (observer) { observer.disconnect(); observer = null; }
-            }
+            try { observer.observe(controlsGrid); } catch (e) { if (observer) { observer.disconnect(); observer = null; } }
           }
-          // Fallback: attach cheap listeners to detect when user scrolls/resizes/focuses
           if (!observer && !fallbackListenersAttached) {
             window.addEventListener('scroll', onViewportCheck, { passive: true });
             window.addEventListener('resize', onViewportCheck, { passive: true });
@@ -450,7 +532,6 @@
       }
     });
 
-    // If offers were loaded after UI init, ensure initial population handled
     if (!window.CoolVoceOffers || Object.keys(window.CoolVoceOffers).length === 0) {
       document.addEventListener('offers:loaded', function handler() {
         document.removeEventListener('offers:loaded', handler);
@@ -458,7 +539,6 @@
       });
     }
 
-    // Optional: when user actively opens the panel (click on offerSelect), apply pending update immediately
     document.addEventListener('click', function (ev) {
       const target = ev.target;
       if (!target) return;

@@ -199,6 +199,48 @@ input::placeholder {
   margin-top: 4px;
 }
 
+/* Links header + clear button */
+.links-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 10px;
+  margin-bottom: 6px;
+}
+.clear-links-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card-bg);
+  border: 1px solid var(--muted-border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 700;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+  transition: transform .12s ease, box-shadow .12s ease, background .18s ease, color .18s ease;
+}
+.clear-links-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.10);
+  background: linear-gradient(90deg, #ff6b6b, #ff5252);
+  color: #fff;
+}
+.clear-links-btn .links-badge {
+  display: inline-block;
+  min-width: 22px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--red);
+  color: #fff;
+  font-weight: 800;
+  font-size: .9rem;
+  line-height: 1;
+  text-align: center;
+}
+
+/* Links container and items */
 #linksContainer {
   margin-top: 10px;
   background: var(--link-bg);
@@ -211,6 +253,8 @@ input::placeholder {
   box-sizing: border-box;
   transition: background 0.4s ease, border 0.4s ease;
 }
+
+/* Layout: left content + right controls column (open/copy stacked + tall delete) */
 .link-box {
   background: var(--card-bg);
   border-radius: 8px;
@@ -219,25 +263,41 @@ input::placeholder {
   box-shadow: 0 4px 10px rgba(0,0,0,.06);
   word-break: break-all;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  gap: 12px;
+  align-items: center;
   transition: transform .12s ease, box-shadow .12s ease, background 0.4s ease;
 }
-.link-box a {
+.link-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.link-main a {
   color: var(--green);
   font-weight: 700;
   text-decoration: none;
 }
-.link-box a:hover {
-  text-decoration: underline;
+.link-main a:hover { text-decoration: underline; }
+
+/* right side controls (vertical buttons + delete) */
+.link-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.link-actions {
+/* column with AP RI/COPIA stacked vertically */
+.actions-column {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  justify-content: flex-end;
+  align-items: stretch;
 }
-.link-actions button {
+
+/* force a consistent button height so delete can match */
+.actions-column button {
+  height: 36px;
   padding: 6px 10px;
   border-radius: 8px;
   border: 1px solid var(--muted-border);
@@ -245,20 +305,69 @@ input::placeholder {
   cursor: pointer;
   font-weight: 700;
   box-shadow: 0 2px 6px rgba(0,0,0,.04);
-  transition: all 0.3s ease;
+  transition: transform .12s ease, box-shadow .12s ease, background .18s ease, color .12s ease;
   color: var(--text);
 }
-.link-actions button.open {
+.actions-column button:hover {
+  transform: scale(1.06);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.10);
+}
+
+/* keep gradient/colours for open/copy */
+.actions-column .open {
   color: #fff;
   background: linear-gradient(90deg, var(--green), #1fb96a);
   border: none;
 }
-.link-actions button.copy {
+.actions-column .open:hover { filter: brightness(1.06); }
+.actions-column .copy {
   color: #fff;
   background: linear-gradient(90deg, var(--red), #ff6b6b);
   border: none;
 }
+.actions-column .copy:hover { filter: brightness(1.06); }
 
+/* delete button on the right: height equals two buttons + gap (36*2 + 8 = 80) */
+.delete-btn {
+  width: 44px;
+  height: 80px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid var(--muted-border);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform .12s ease, background .18s ease, box-shadow .12s ease, color .12s ease;
+  font-weight: 800;
+}
+.delete-btn .x {
+  display: inline-block;
+  transition: transform .12s ease;
+  line-height: 1;
+  font-size: 1.05rem;
+}
+.delete-btn:hover {
+  transform: scale(1.04);
+  background: linear-gradient(90deg, #ff6b6b, #ff5252);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(255,82,82,0.18);
+}
+.delete-btn:hover .x {
+  transform: scale(1.18);
+}
+
+/* entry animation for new link boxes (fade + slide up) */
+.link-box.enter {
+  animation: fadeSlideIn .28s cubic-bezier(.2,.9,.2,1);
+}
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* links latest highlight remain as before */
 .link-box.latest {
   border: 2px solid var(--green);
   background: var(--highlight-bg);
@@ -274,6 +383,8 @@ input::placeholder {
   .controls-grid {
     grid-template-columns: repeat(2, minmax(160px, 1fr));
   }
+  /* make delete button shorter on small screens */
+  .delete-btn { height: 64px; width: 40px; }
 }
 @media (max-width:520px){
   .controls-grid {
@@ -283,4 +394,7 @@ input::placeholder {
   #generateBtn {
     height: 48px;
   }
+  .link-box { flex-direction: column; align-items: stretch; }
+  .link-controls { justify-content: space-between; }
+  .delete-btn { align-self: flex-end; height: 44px; width: 40px; }
 }
