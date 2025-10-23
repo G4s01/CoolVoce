@@ -1,13 +1,11 @@
 // js/link-generator.js
 // Generatore link per CoolVoce - integrato con DOMPurify per sanitizzazione delle descrizioni.
-// Assumiamo formato A (desc: array di righe). Se DOMPurify non è disponibile viene usato fallback escape.
-// Aggiunta: ascolta l'evento 'offers:updated' e aggiorna la UI (repopola <select> e aggiorna descrizione corrente).
-// Ottimizzazione: applica il refresh automatico SOLO se il pannello offerte (.controls-grid) è visibile.
-// Entry animation per nuovi link e gestione coerente della classe "latest" quando si rimuovono elementi.
-
+// Fix: rimozione robusta dei box (delegated delete + animationend + fallback timeout)
+// Fix: ripristino sicuro label GENERA
 (function () {
   const HISTORY_KEY = 'coolvoce-history';
   const HISTORY_LIMIT = 20;
+  const EXIT_ANIMATION_MS = 180; // must match CSS .link-box.exit duration (180ms)
   const qs = id => document.getElementById(id);
 
   function escapeHtml(str = '') {
@@ -19,12 +17,8 @@
       .replace(/'/g, '&#039;');
   }
 
-  function getOffers() {
-    return window.CoolVoceOffers || {};
-  }
+  function getOffers() { return window.CoolVoceOffers || {}; }
 
-  // sanitizeDescArray: accetta solo array di stringhe (format A).
-  // Usa DOMPurify if available; otherwise fallback ad escape + join.
   function sanitizeDescArray(desc) {
     if (!desc) return '';
     if (!Array.isArray(desc)) {
@@ -52,9 +46,7 @@
       document.execCommand('copy');
       document.body.removeChild(ta);
       return true;
-    } catch (e) {
-      return false;
-    }
+    } catch (e) { return false; }
   }
 
   function ensureAriaLive() {
@@ -121,8 +113,8 @@
   function createLinkBox(link) {
     const box = document.createElement('div');
     box.className = 'link-box';
+    box.dataset.link = link;
 
-    // left: main content (stack)
     const main = document.createElement('div');
     main.className = 'link-main';
     const a = document.createElement('a');
@@ -132,11 +124,9 @@
     a.textContent = link;
     main.appendChild(a);
 
-    // right: controls column
     const controls = document.createElement('div');
     controls.className = 'link-controls';
 
-    // actions column: APRI (top) then COPIA (bottom)
     const actionsCol = document.createElement('div');
     actionsCol.className = 'actions-column';
 
@@ -160,7 +150,6 @@
     actionsCol.appendChild(openBtn);
     actionsCol.appendChild(copyBtn);
 
-    // delete button to the right, tall
     const deleteBtn = document.createElement('button');
     deleteBtn.type = 'button';
     deleteBtn.className = 'delete-btn';
@@ -169,18 +158,6 @@
     xSpan.className = 'x';
     xSpan.textContent = '✕';
     deleteBtn.appendChild(xSpan);
-
-    deleteBtn.addEventListener('click', () => {
-      const wasLatest = box.classList.contains('latest');
-      // remove the DOM node
-      if (box && box.parentNode) box.parentNode.removeChild(box);
-      // remove from history storage
-      try { removeHistoryLink(link); } catch (e) {}
-      // notify app to update badge/history and whether it was latest
-      try {
-        document.dispatchEvent(new CustomEvent('link:removed', { detail: { link, removedWasLatest: wasLatest } }));
-      } catch (e) {}
-    });
 
     controls.appendChild(actionsCol);
     controls.appendChild(deleteBtn);
@@ -195,8 +172,6 @@
     return box;
   }
 
-  // initUI returns an object with a refresh() method so external events (offers:updated)
-  // can repopulate the select and refresh the currently visible description.
   function initUI() {
     const offerSelect = qs('offerSelect');
     const customInput = qs('customOffer');
@@ -207,16 +182,12 @@
     const linksContainer = qs('linksContainer');
     const controlsGrid = document.querySelector('.controls-grid');
 
-    // clear button + badge
     const clearBtn = qs('clearLinksBtn');
     const linksBadge = qs('linksCountBadge');
 
     if (!offerSelect || !customInput || !simType || !activationType || !generateBtn || !offerDescription || !linksContainer) {
       console.warn('Elementi UI mancanti - init aborted');
-      return {
-        refresh: () => {},
-        controlsGrid: controlsGrid
-      };
+      return { refresh: () => {}, controlsGrid: controlsGrid };
     }
 
     function hideDescription() {
@@ -248,13 +219,11 @@
       }
     }
 
-    // remove all .latest classes (robust)
     function clearLatest() {
       const items = linksContainer.querySelectorAll('.link-box.latest');
       items.forEach(it => it.classList.remove('latest'));
     }
 
-    // Populate select from offers (offers is global window.CoolVoceOffers)
     function populate(offers) {
       const prevSelected = offerSelect.value;
       offerSelect.innerHTML = '<option value="">SELEZIONA</option>';
@@ -267,19 +236,12 @@
       });
       if (prevSelected) {
         const stillExists = !!(offers && offers[prevSelected]);
-        if (stillExists) {
-          offerSelect.value = prevSelected;
-        } else {
-          offerSelect.value = '';
-        }
+        if (stillExists) { offerSelect.value = prevSelected; } else { offerSelect.value = ''; }
       }
     }
 
-    // Initialize with existing offers if present
     populate(getOffers());
 
-    // update badge count based on DOM (source of truth).
-    // If DOM is empty but history exists, clear history to keep consistency.
     function updateLinksCount() {
       const domCount = linksContainer ? linksContainer.querySelectorAll('.link-box').length : 0;
       const hist = loadHistory();
@@ -287,7 +249,7 @@
 
       let count = domCount;
       if (domCount === 0 && histCount > 0) {
-        try { localStorage.removeItem(HISTORY_KEY); } catch (e) { /* ignore */ }
+        try { localStorage.removeItem(HISTORY_KEY); } catch (e) {}
         count = 0;
       }
 
@@ -295,47 +257,89 @@
       if (clearBtn) clearBtn.setAttribute('aria-label', `Svuota i link generati (${count} presenti)`);
     }
 
-    // handle per-link removed events (dispatched by createLinkBox)
-    document.addEventListener('link:removed', function (ev) {
-      try {
-        const link = ev && ev.detail && ev.detail.link;
-        const removedWasLatest = ev && ev.detail && ev.detail.removedWasLatest;
-        if (link) removeHistoryLink(link);
-        // if the removed item was latest, ensure a new latest is set to first element
-        if (removedWasLatest) {
-          // slight delay to let DOM removal settle
+    // Delegated delete handler (defensive + fallback)
+    linksContainer.addEventListener('click', function (ev) {
+      const btn = ev.target && ev.target.closest ? ev.target.closest('.delete-btn') : null;
+      if (!btn) return;
+      const box = btn.closest('.link-box');
+      if (!box) return;
+      // already deleting?
+      if (box.dataset.deleting === '1') return;
+      box.dataset.deleting = '1';
+      const link = box.dataset.link || (box.querySelector && box.querySelector('a') && box.querySelector('a').href) || null;
+      const wasLatest = box.classList.contains('latest');
+
+      // ensure any previous exit listener is removed
+      const removeHandlers = [];
+      const removeNow = () => {
+        // cleanup listeners
+        removeHandlers.forEach(fn => box.removeEventListener('animationend', fn));
+        // remove element (if still present)
+        if (box && box.parentNode) box.parentNode.removeChild(box);
+        // update history
+        try { if (link) removeHistoryLink(link); } catch (err) {}
+        // dispatch event
+        try { document.dispatchEvent(new CustomEvent('link:removed', { detail: { link, removedWasLatest: wasLatest } })); } catch (err) {}
+        // reassign latest if needed
+        if (wasLatest) {
           requestAnimationFrame(() => {
             const first = linksContainer.querySelector('.link-box');
             if (first) {
-              // remove existing latest markers first for safety
               linksContainer.querySelectorAll('.link-box.latest').forEach(it => it.classList.remove('latest'));
               first.classList.add('latest');
             }
             updateLinksCount();
             announce('Link rimosso.');
           });
-          return;
+        } else {
+          updateLinksCount();
+          announce('Link rimosso.');
         }
-      } catch (e) {}
-      // update badge based on DOM
-      updateLinksCount();
-      announce('Link rimosso.');
+      };
+
+      // start exit animation
+      box.classList.add('exit');
+
+      // animationend handler, ensure comes from the box itself
+      const onAnimEnd = (e) => {
+        if (e && e.target !== box) return;
+        clearTimeout(fallbackTimer);
+        removeNow();
+      };
+      removeHandlers.push(onAnimEnd);
+      box.addEventListener('animationend', onAnimEnd, { once: true });
+
+      // fallback: ensure removal even if animationend doesn't fire (duration + small margin)
+      const fallbackTimer = setTimeout(() => {
+        // prevent double removal
+        try { box.removeEventListener('animationend', onAnimEnd); } catch (e) {}
+        removeNow();
+      }, EXIT_ANIMATION_MS + 60);
     });
 
-    // wire clear button (no confirmation)
+    // clear all (animate then remove)
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
-        const countNow = linksContainer ? linksContainer.querySelectorAll('.link-box').length : 0;
-        if (countNow === 0) {
+        const items = Array.from(linksContainer.querySelectorAll('.link-box'));
+        if (items.length === 0) {
           announce('Non ci sono link da cancellare.');
           try { localStorage.removeItem(HISTORY_KEY); } catch (e) {}
           updateLinksCount();
           return;
         }
-        linksContainer.innerHTML = '';
-        try { localStorage.removeItem(HISTORY_KEY); } catch (e) {}
-        updateLinksCount();
-        announce('Elenco link svuotato.');
+        items.forEach(it => {
+          if (it.dataset.deleting !== '1') {
+            it.dataset.deleting = '1';
+            it.classList.add('exit');
+          }
+        });
+        // remove after animation duration (plus margin)
+        setTimeout(() => {
+          linksContainer.innerHTML = '';
+          try { localStorage.removeItem(HISTORY_KEY); } catch (e) {}
+          updateLinksCount();
+          announce('Elenco link svuotato.');
+        }, EXIT_ANIMATION_MS + 60);
       });
     }
 
@@ -393,7 +397,6 @@
       const rawCode = prefix + code;
       const link = buildCampaignLink({ tipoFlusso, tipoAttivazione, codiceCampagna: rawCode });
 
-      // remove any previous "latest" marker, then add the new box as latest
       clearLatest();
       const box = createLinkBox(link);
       linksContainer.prepend(box);
@@ -405,11 +408,10 @@
 
       announce('Link generato. Premi "COPIA" per copiare negli appunti.');
       generateBtn.classList.add('copied');
-      const prevText = generateBtn.textContent;
       generateBtn.textContent = 'GENERATO';
       setTimeout(() => {
         generateBtn.classList.remove('copied');
-        generateBtn.textContent = prevText || 'GENERA';
+        generateBtn.textContent = 'GENERA';
       }, 1400);
     });
 
@@ -433,7 +435,6 @@
       setTimeout(() => { t.style.opacity = '0'; setTimeout(()=> t.remove(),300); }, 1500);
     }
 
-    // refresh method to be called when offers change (e.g. background update)
     function refresh() {
       const currentOffers = getOffers();
       const prevSelected = offerSelect.value;
@@ -458,14 +459,10 @@
       }
     }
 
-    // initial badge update
     updateLinksCount();
-
-    // expose refresh and controlsGrid reference
     return { refresh, controlsGrid };
   }
 
-  // Utility: is element visible in viewport and not display:none
   function isElementVisibleInViewport(el) {
     if (!el) return false;
     if (!(el instanceof Element)) return false;
@@ -475,7 +472,6 @@
     return rect.width > 0 && rect.height > 0 && rect.bottom >= 0 && rect.top <= (window.innerHeight || document.documentElement.clientHeight);
   }
 
-  // Avvia e registra listener per 'offers:updated' che richiama refresh() condizionato
   function init() {
     ensureAriaLive();
     const uiHandle = initUI();

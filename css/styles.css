@@ -1,3 +1,4 @@
+/* styles.css (updated: faster exit animation -> slide left) */
 :root {
   --green: #00b25c;
   --red: #b30000;
@@ -365,6 +366,16 @@ input::placeholder {
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* exit animation for removed link boxes (faster, slide left) */
+/* shorter duration (0.18s) and translateX negative for slide-left */
+.link-box.exit {
+  animation: fadeSlideOut .18s cubic-bezier(.2,.9,.2,1) forwards;
+}
+@keyframes fadeSlideOut {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(-12px); }
 }
 
 /* links latest highlight remain as before */
