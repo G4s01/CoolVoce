@@ -1,6 +1,11 @@
 // js/link-generator.js
 // Generatore link per CoolVoce - integrato con DOMPurify per sanitizzazione delle descrizioni.
 // Assumiamo formato A (desc: array di righe). Se DOMPurify non è disponibile viene usato fallback escape.
+// Aggiunta: ascolta l'evento 'offers:updated' e aggiorna la UI (repopola <select> e aggiorna descrizione corrente).
+// Ottimizzazione: applica il refresh automatico SOLO se il pannello offerte (.controls-grid) è visibile.
+// IntersectionObserver configurato con threshold 0.1 e rootMargin '0px 0px -15% 0px'.
+//
+// Fix: handlers now always read the current offers via getOffers() (no stale copy).
 
 (function () {
   const HISTORY_KEY = 'coolvoce-history';
@@ -14,6 +19,10 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  function getOffers() {
+    return window.CoolVoceOffers || {};
   }
 
   // sanitizeDescArray: accetta solo array di stringhe (format A).
@@ -157,6 +166,8 @@
     return box;
   }
 
+  // initUI returns an object with a refresh() method so external events (offers:updated)
+  // can repopulate the select and refresh the currently visible description.
   function initUI() {
     const offerSelect = qs('offerSelect');
     const customInput = qs('customOffer');
@@ -165,10 +176,14 @@
     const generateBtn = qs('generateBtn');
     const offerDescription = qs('offerDescription');
     const linksContainer = qs('linksContainer');
+    const controlsGrid = document.querySelector('.controls-grid');
 
     if (!offerSelect || !customInput || !simType || !activationType || !generateBtn || !offerDescription || !linksContainer) {
       console.warn('Elementi UI mancanti - init aborted');
-      return;
+      return {
+        refresh: () => {},
+        controlsGrid: controlsGrid
+      };
     }
 
     function hideDescription() {
@@ -205,7 +220,10 @@
       if (p) p.classList.remove('latest');
     }
 
+    // Populate select from offers (offers is global window.CoolVoceOffers)
     function populate(offers) {
+      // preserve current selection where possible
+      const prevSelected = offerSelect.value;
       offerSelect.innerHTML = '<option value="">SELEZIONA</option>';
       if (!offers || Object.keys(offers).length === 0) return;
       Object.keys(offers).forEach(key => {
@@ -214,16 +232,26 @@
         opt.textContent = (offers[key] && offers[key].label) ? offers[key].label : key;
         offerSelect.appendChild(opt);
       });
+      // restore selection if still available
+      if (prevSelected) {
+        const stillExists = !!(offers && offers[prevSelected]);
+        if (stillExists) {
+          offerSelect.value = prevSelected;
+        } else {
+          offerSelect.value = '';
+        }
+      }
     }
 
-    const offers = window.CoolVoceOffers || {};
-    populate(offers);
+    // Initialize with existing offers if present
+    populate(getOffers());
 
     offerSelect.addEventListener('change', () => {
       const sel = offerSelect.value;
       if (sel) {
         customInput.value = '';
-        if (offers[sel]) showOffer(sel, offers);
+        const offersNow = getOffers();
+        if (offersNow[sel]) showOffer(sel, offersNow);
         else hideDescription();
       } else hideDescription();
     });
@@ -235,7 +263,8 @@
         hideDescription();
       } else {
         const sel = offerSelect.value;
-        if (sel && offers[sel]) showOffer(sel, offers);
+        const offersNow = getOffers();
+        if (sel && offersNow[sel]) showOffer(sel, offersNow);
       }
     });
 
@@ -306,20 +335,142 @@
       requestAnimationFrame(() => t.style.opacity = '1');
       setTimeout(() => { t.style.opacity = '0'; setTimeout(()=> t.remove(),300); }, 1500);
     }
+
+    // refresh method to be called when offers change (e.g. background update)
+    function refresh() {
+      const currentOffers = getOffers();
+      const prevSelected = offerSelect.value;
+      const prevCustom = customInput.value.trim();
+
+      populate(currentOffers);
+
+      // If user has a custom input in progress, don't override it or change selection.
+      if (prevCustom) {
+        console.info('Offers refreshed in background; preserving custom input in progress.');
+        return;
+      }
+
+      // If previous selection still exists, show it again (refresh description)
+      if (prevSelected) {
+        if (currentOffers[prevSelected]) {
+          showOffer(prevSelected, currentOffers);
+          announce('Elenco offerte aggiornato — la selezione è stata mantenuta.');
+        } else {
+          hideDescription();
+          offerSelect.value = '';
+          announce("L'offerta selezionata non è più disponibile dopo l'aggiornamento.");
+        }
+      }
+    }
+
+    // expose refresh and controlsGrid reference
+    return { refresh, controlsGrid };
   }
 
+  // Utility: is element visible in viewport and not display:none
+  function isElementVisibleInViewport(el) {
+    if (!el) return false;
+    if (!(el instanceof Element)) return false;
+    const style = getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false;
+    const rect = el.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && rect.bottom >= 0 && rect.top <= (window.innerHeight || document.documentElement.clientHeight);
+  }
+
+  // Avvia e registra listener per 'offers:updated' che richiama refresh() condizionato
   function init() {
     ensureAriaLive();
-    if (window.CoolVoceOffers && Object.keys(window.CoolVoceOffers).length > 0) {
-      initUI();
-    } else {
+    // create UI and get refresh handle + controlsGrid reference
+    const uiHandle = initUI();
+    const controlsGrid = uiHandle && uiHandle.controlsGrid ? uiHandle.controlsGrid : document.querySelector('.controls-grid');
+
+    let pendingOffersUpdate = false;
+    let observer = null;
+    let fallbackListenersAttached = false;
+
+    function applyUpdateIfVisible() {
+      if (!uiHandle || typeof uiHandle.refresh !== 'function') return;
+      if (isElementVisibleInViewport(controlsGrid)) {
+        uiHandle.refresh();
+        pendingOffersUpdate = false;
+        // disconnect observer / remove fallback listeners if any
+        if (observer) { observer.disconnect(); observer = null; }
+        if (fallbackListenersAttached) {
+          window.removeEventListener('scroll', onViewportCheck);
+          window.removeEventListener('resize', onViewportCheck);
+          window.removeEventListener('focus', onViewportCheck);
+          fallbackListenersAttached = false;
+        }
+      }
+    }
+
+    function onViewportCheck() {
+      applyUpdateIfVisible();
+    }
+
+    document.addEventListener('offers:updated', function (ev) {
+      try {
+        // If controlsGrid visible now -> apply immediately
+        if (isElementVisibleInViewport(controlsGrid)) {
+          if (uiHandle && typeof uiHandle.refresh === 'function') uiHandle.refresh();
+          console.info('offers:updated applied immediately (controls visible)');
+        } else {
+          // Not visible: mark pending and set up observer/fallback to apply once visible
+          pendingOffersUpdate = true;
+          announce('Aggiornamento offerte disponibile.');
+          // Use IntersectionObserver if available for efficient detection
+          if ('IntersectionObserver' in window && controlsGrid) {
+            if (observer) observer.disconnect();
+            // Threshold: 0.1 (10%), rootMargin: '0px 0px -15% 0px' (anticipate slightly)
+            observer = new IntersectionObserver((entries) => {
+              for (const entry of entries) {
+                if (entry.isIntersecting) {
+                  applyUpdateIfVisible();
+                }
+              }
+            }, { root: null, threshold: 0.1, rootMargin: '0px 0px -15% 0px' });
+            try {
+              observer.observe(controlsGrid);
+            } catch (e) {
+              // observe may fail on detached elements; fallback to listeners
+              if (observer) { observer.disconnect(); observer = null; }
+            }
+          }
+          // Fallback: attach cheap listeners to detect when user scrolls/resizes/focuses
+          if (!observer && !fallbackListenersAttached) {
+            window.addEventListener('scroll', onViewportCheck, { passive: true });
+            window.addEventListener('resize', onViewportCheck, { passive: true });
+            window.addEventListener('focus', onViewportCheck, { passive: true });
+            fallbackListenersAttached = true;
+          }
+          console.info('offers:updated received; update deferred until offers panel visible.');
+        }
+      } catch (e) {
+        console.warn('Error handling offers:updated', e);
+      }
+    });
+
+    // If offers were loaded after UI init, ensure initial population handled
+    if (!window.CoolVoceOffers || Object.keys(window.CoolVoceOffers).length === 0) {
       document.addEventListener('offers:loaded', function handler() {
         document.removeEventListener('offers:loaded', handler);
-        initUI();
+        if (uiHandle && typeof uiHandle.refresh === 'function') uiHandle.refresh();
       });
     }
+
+    // Optional: when user actively opens the panel (click on offerSelect), apply pending update immediately
+    document.addEventListener('click', function (ev) {
+      const target = ev.target;
+      if (!target) return;
+      if (target.id === 'offerSelect' || (target.closest && target.closest('.controls-grid'))) {
+        if (pendingOffersUpdate) applyUpdateIfVisible();
+      }
+    }, { passive: true });
+
+    console.info('link-generator initialized with conditional offers refresh (threshold 0.1, rootMargin -15%).');
   }
 
+  // start
   init();
 
 })();
