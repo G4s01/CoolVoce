@@ -74,19 +74,22 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       transition: all 0.4s ease;
       z-index: 100;
+      padding: 0;
+      border: none;
     }
     .theme-toggle:hover {
       transform: scale(1.08);
       box-shadow: 0 6px 16px rgba(0,0,0,0.15);
     }
     .theme-toggle span {
-      font-size: 1.5em;
+      font-size: 1.5rem;
       transition: opacity 0.3s ease, transform 0.3s ease;
+      line-height: 1;
     }
-    body.dark .theme-toggle span.sun { opacity: 1; transform: rotate(0deg); }
-    body.dark .theme-toggle span.moon { opacity: 0; transform: rotate(180deg); }
-    body:not(.dark) .theme-toggle span.sun { opacity: 0; transform: rotate(180deg); }
-    body:not(.dark) .theme-toggle span.moon { opacity: 1; transform: rotate(0deg); }
+    body.dark .theme-toggle .sun { opacity: 1; transform: rotate(0deg); }
+    body.dark .theme-toggle .moon { opacity: 0; transform: rotate(180deg); }
+    body:not(.dark) .theme-toggle .sun { opacity: 0; transform: rotate(180deg); }
+    body:not(.dark) .theme-toggle .moon { opacity: 1; transform: rotate(0deg); }
 
     .logo {
       display: flex;
@@ -291,10 +294,10 @@
   </style>
 </head>
 <body class="dark">
-  <div class="theme-toggle" id="themeToggle" title="Cambia tema">
+  <button id="themeToggle" class="theme-toggle" title="Cambia tema" aria-pressed="true">
     <span class="moon">🌙</span>
     <span class="sun">☀️</span>
-  </div>
+  </button>
 
   <div class="container" role="main">
     <div class="logo">
@@ -344,8 +347,15 @@
     <div id="linksContainer"></div>
   </div>
 
-  <!-- Loader che carica il JSON e imposta window.CoolVoceOffers -->
+  <!-- Theme toggle behaviour -->
+  <script src="./js/theme-toggle.js"></script>
+
+  <!-- DOMPurify: usato per sanitizzare description (safe allowlist: <br>) -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js" integrity="sha384-+k0f8nD2u1ZkF2xN7J5eZd0f0WzQxQmVQJm1w6kQn0p3v1k5gYf6G2z3T0b7R9rS" crossorigin="anonymous"></script>
+
+  <!-- Loader che carica il JSON e imposta window.CoolVoceOffers (con ETag caching + TTL 1 day) -->
   <script src="./js/offers-loader.js"></script>
+
   <!-- Script esterno che sostituisce lo script inline (link-generator.js) -->
   <script src="./js/link-generator.js"></script>
 </body>

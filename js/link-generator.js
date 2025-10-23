@@ -1,14 +1,10 @@
 // js/link-generator.js
-// Generatore link per CoolVoce - versione "strict A format"
-// - accetta SOLO desc come array di righe (format A).
-// - se desc non è array, non viene renderizzata la descrizione e viene mostrato un errore in console.
+// Generatore link per CoolVoce - integrato con DOMPurify per sanitizzazione delle descrizioni.
+// Assumiamo formato A (desc: array di righe). Se DOMPurify non è disponibile viene usato fallback escape.
 
 (function () {
-  // Config
   const HISTORY_KEY = 'coolvoce-history';
   const HISTORY_LIMIT = 20;
-
-  // Helpers
   const qs = id => document.getElementById(id);
 
   function escapeHtml(str = '') {
@@ -20,16 +16,47 @@
       .replace(/'/g, '&#039;');
   }
 
-  // sanitizeDesc: supporta SOLO array di stringhe.
-  // Se non viene passato un array, ritorna stringa vuota e logga un errore per la migrazione.
+  // sanitizeDescArray: accetta solo array di stringhe (format A).
+  // Usa DOMPurify if available; otherwise fallback ad escape + join.
   function sanitizeDescArray(desc) {
     if (!desc) return '';
     if (!Array.isArray(desc)) {
-      console.error('CoolVoce: formato "desc" non valido. Ora è richiesto un array di righe (format A). Esempio: "desc": ["riga1","riga2"]. La descrizione non verrà visualizzata per questa offerta.', desc);
+      console.error('CoolVoce: formato "desc" non valido. È richiesto un array di righe (format A).');
       return '';
     }
-    // escape ogni riga e unisci con <br/>
+    // join le righe con <br/>
+    const rawHtml = desc.map(d => String(d)).join('<br/>');
+
+    // se DOMPurify presente usalo con allowlist di tag limitata
+    if (window.DOMPurify && typeof window.DOMPurify.sanitize === 'function') {
+      try {
+        return window.DOMPurify.sanitize(rawHtml, { ALLOWED_TAGS: ['br'] });
+      } catch (e) {
+        console.warn('DOMPurify errore, fallback a escape:', e);
+      }
+    }
+
+    // fallback: escape ogni riga singolarmente e join con <br/>
     return desc.map(line => escapeHtml(String(line))).join('<br/>');
+  }
+
+  async function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try { await navigator.clipboard.writeText(text); return true; } catch (e) { /* fallback */ }
+    }
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   function ensureAriaLive() {
@@ -52,32 +79,12 @@
     return region;
   }
 
-  async function copyToClipboard(text) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      try { await navigator.clipboard.writeText(text); return true; } catch (e) { /* fallback */ }
-    }
-    try {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.left = '-9999px';
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
   function announce(msg) {
     const region = ensureAriaLive();
     region.textContent = msg;
     setTimeout(() => { region.textContent = ''; }, 1500);
   }
 
-  // Costruisce link usando URLSearchParams
   function buildCampaignLink({ tipoFlusso, tipoAttivazione, codiceCampagna }) {
     const params = new URLSearchParams({
       tipoFlusso: tipoFlusso || '',
@@ -87,7 +94,6 @@
     return `https://shop.coopvoce.it/?${params.toString()}`;
   }
 
-  // Validazione semplice per il codice offerta (evita caratteri strani)
   function normalizeOfferCode(raw) {
     if (!raw) return { code: '', valid: false };
     const trimmed = raw.trim();
@@ -95,13 +101,8 @@
     return { code: trimmed, valid: isValid };
   }
 
-  // Cronologia in localStorage
   function loadHistory() {
-    try {
-      return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-    } catch (e) {
-      return [];
-    }
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch (e) { return []; }
   }
   function saveHistoryItem(item) {
     try {
@@ -109,10 +110,9 @@
       arr.unshift(item);
       const unique = arr.filter((v, i, a) => a.findIndex(x => x.link === v.link) === i);
       localStorage.setItem(HISTORY_KEY, JSON.stringify(unique.slice(0, HISTORY_LIMIT)));
-    } catch (e) { /* noop */ }
+    } catch (e) {}
   }
 
-  // Crea box link usando DOM APIs
   function createLinkBox(link) {
     const box = document.createElement('div');
     box.className = 'link-box latest';
@@ -157,7 +157,6 @@
     return box;
   }
 
-  // Inizializzazione UI
   function initUI() {
     const offerSelect = qs('offerSelect');
     const customInput = qs('customOffer');
@@ -186,14 +185,12 @@
       const labelId = String('label-' + key).replace(/[^a-zA-Z0-9\-_:.]/g, '-');
       const descId = String('desc-' + key).replace(/[^a-zA-Z0-9\-_:.]/g, '-');
 
-      // Strict: desc must be an array
       const descHtml = sanitizeDescArray(desc);
       offerDescription.innerHTML =
         '<div class="offer-label" id="'+labelId+'" role="heading" aria-level="3">'+escapeHtml(label)+
         ' <span class="offer-key" aria-hidden="true">('+escapeHtml(key)+')</span></div>'+
         '<div class="offer-desc" id="'+descId+'">'+descHtml+'</div>';
 
-      // Mostra solo se c'è qualcosa da mostrare
       if (descHtml) {
         offerDescription.style.display = 'block';
         offerDescription.setAttribute('data-offer-key', key);
@@ -208,7 +205,6 @@
       if (p) p.classList.remove('latest');
     }
 
-    // Populate select from offers
     function populate(offers) {
       offerSelect.innerHTML = '<option value="">SELEZIONA</option>';
       if (!offers || Object.keys(offers).length === 0) return;
@@ -248,7 +244,6 @@
       const selected = offerSelect.value.trim();
       const chosen = (custom !== '' ? custom : selected);
 
-      // reset shadows
       customInput.style.boxShadow = '0 4px 10px rgba(0,0,0,0.06)';
       offerSelect.style.boxShadow = '0 4px 10px rgba(0,0,0,0.06)';
 
@@ -313,7 +308,6 @@
     }
   }
 
-  // Avvia quando le offerte sono pronte (o subito se già caricate)
   function init() {
     ensureAriaLive();
     if (window.CoolVoceOffers && Object.keys(window.CoolVoceOffers).length > 0) {
