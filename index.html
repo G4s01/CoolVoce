@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title> CoolVoce ❤️💚</title>
+  <title>CoolVoce ❤️💚</title>
 
   <!-- Stili esterni -->
   <link rel="stylesheet" href="./css/styles.css">
 </head>
 <body class="dark">
+  <!-- Theme toggle -->
   <button id="themeToggle" class="theme-toggle" title="Cambia tema" aria-pressed="true">
     <span class="moon">🌙</span>
     <span class="sun">☀️</span>
@@ -16,15 +17,14 @@
 
   <div class="container" role="main">
     <div class="logo">
-      <div class="logo-shape"></div>
+      <div class="logo-shape" aria-hidden="true"></div>
       <div class="logo-text"> CoolVoce</div>
-      <div class="hearts">❤️💚</div>
+      <div class="hearts" aria-hidden="true">❤️💚</div>
     </div>
 
     <div class="controls-grid">
       <div class="control">
         <label for="offerSelect">OFFERTA?</label>
-        <!-- aria-describedby punta alla regione dove viene mostrata label+desc -->
         <select id="offerSelect" aria-describedby="offerDescription">
           <option value="">SELEZIONA</option>
           <!-- opzioni popolate dinamicamente -->
@@ -62,13 +62,13 @@
 
     <!-- Links header: pulsante cestino con contatore -->
     <div class="links-header" aria-hidden="false">
-      <button id="clearLinksBtn" class="clear-links-btn" aria-label="Svuota i link generati">
+      <button id="clearLinksBtn" class="clear-links-btn" aria-label="Svuota i link generati (0 presenti)">
         <span class="trash" aria-hidden="true">🗑️</span>
         <span id="linksCountBadge" class="links-badge" aria-live="polite" aria-atomic="true">0</span>
       </button>
     </div>
 
-    <div id="linksContainer"></div>
+    <div id="linksContainer" aria-live="polite" aria-atomic="false"></div>
   </div>
 
   <!-- Theme toggle behaviour -->
@@ -77,10 +77,20 @@
   <!-- DOMPurify: vendored, local copy -->
   <script src="./js/vendor/purify.min.js"></script>
 
-  <!-- Loader che carica il JSON e imposta window.CoolVoceOffers (con ETag caching + TTL 1 day) -->
+  <!-- Loader che carica il JSON e imposta window.CoolVoceOffers (with events offers:loaded / offers:updated) -->
   <script src="./js/offers-loader.js"></script>
 
-  <!-- Script principale -->
-  <script src="./js/link-generator.js"></script>
+  <!-- Legacy vended helpers if any (kept local) -->
+  <!-- Main controller (ES module) -->
+  <script type="module">
+    import { initLinkController } from './js/link-controller.js';
+
+    // inizializza l'app principale; se vuoi passare opzioni personalizzate mettile qui
+    // Nota: il loader offers-loader.js imposta window.CoolVoceOffers ed emette events (offers:loaded / offers:updated).
+    window.linkApp = initLinkController();
+
+    // per compatibilità con eventuali script legacy, esportiamo alcune API utili
+    // (es: window.linkApp.renderer, window.linkApp.store se presenti)
+  </script>
 </body>
 </html>
