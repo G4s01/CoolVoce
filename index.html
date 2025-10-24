@@ -1,24 +1,48 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="it">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>CoolVoce ❤️💚</title>
 
-  <!-- Stili esterni -->
-  <link rel="stylesheet" href="./css/styles.css">
+  <!-- Inline script to set saved theme early (minimize FOUC) -->
+  <script>
+    (function() {
+      try {
+        const key = 'cv-theme'; // 'dark' | 'light' or null
+        const stored = localStorage.getItem(key);
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = stored || (prefersDark ? 'dark' : 'light');
+        if (theme === 'dark') {
+          try { document.documentElement.classList.add('dark'); } catch(e) {}
+          if (document.body) document.body.classList.add('dark');
+          else document.addEventListener('DOMContentLoaded', () => document.body.classList.add('dark'));
+        } else {
+          try { document.documentElement.classList.remove('dark'); } catch(e) {}
+          if (document.body) document.body.classList.remove('dark');
+          else document.addEventListener('DOMContentLoaded', () => document.body.classList.remove('dark'));
+        }
+      } catch (e) { /* no-op */ }
+    })();
+  </script>
+
+  <!-- Theme variables (load first so style.css can use variables) -->
+  <link rel="stylesheet" href="./css/theme.css">
+  <!-- App styles -->
+  <link rel="stylesheet" href="./css/style.css">
 </head>
-<body class="dark">
+<body>
   <!-- Theme toggle -->
-  <button id="themeToggle" class="theme-toggle" title="Cambia tema" aria-pressed="true">
-    <span class="moon">🌙</span>
-    <span class="sun">☀️</span>
+  <button id="themeToggle" class="theme-toggle" title="Cambia tema" aria-pressed="false">
+    <span class="moon" aria-hidden="true">🌙</span>
+    <span class="sun" aria-hidden="true">☀️</span>
   </button>
 
   <div class="container" role="main">
+    <!-- Minimal markup to test styles -->
     <div class="logo">
       <div class="logo-shape" aria-hidden="true"></div>
-      <div class="logo-text"> CoolVoce</div>
+      <div class="logo-text">CoolVoce</div>
       <div class="hearts" aria-hidden="true">❤️💚</div>
     </div>
 
@@ -27,7 +51,6 @@
         <label for="offerSelect">OFFERTA?</label>
         <select id="offerSelect" aria-describedby="offerDescription">
           <option value="">SELEZIONA</option>
-          <!-- opzioni popolate dinamicamente -->
         </select>
       </div>
 
@@ -57,11 +80,9 @@
       </div>
     </div>
 
-    <!-- aria-live: annuncia i cambiamenti ai lettori di schermo (polite) -->
     <div id="offerDescription" class="offer-description" aria-live="polite" aria-atomic="true"></div>
 
-    <!-- Links header: pulsante cestino con contatore -->
-    <div class="links-header" aria-hidden="false">
+    <div class="links-header">
       <button id="clearLinksBtn" class="clear-links-btn" aria-label="Svuota i link generati (0 presenti)">
         <span class="trash" aria-hidden="true">🗑️</span>
         <span id="linksCountBadge" class="links-badge" aria-live="polite" aria-atomic="true">0</span>
@@ -71,26 +92,17 @@
     <div id="linksContainer" aria-live="polite" aria-atomic="false"></div>
   </div>
 
-  <!-- Theme toggle behaviour -->
-  <script src="./js/theme-toggle.js"></script>
-
-  <!-- DOMPurify: vendored, local copy -->
+  <!-- vendor + loaders (only if present in your project) -->
   <script src="./js/vendor/purify.min.js"></script>
-
-  <!-- Loader che carica il JSON e imposta window.CoolVoceOffers (with events offers:loaded / offers:updated) -->
   <script src="./js/offers-loader.js"></script>
 
-  <!-- Legacy vended helpers if any (kept local) -->
-  <!-- Main controller (ES module) -->
+  <!-- theme toggle behavior -->
+  <script src="./js/theme-toggle.js"></script>
+
+  <!-- module bootstrap -->
   <script type="module">
     import { initLinkController } from './js/link-controller.js';
-
-    // inizializza l'app principale; se vuoi passare opzioni personalizzate mettile qui
-    // Nota: il loader offers-loader.js imposta window.CoolVoceOffers ed emette events (offers:loaded / offers:updated).
     window.linkApp = initLinkController();
-
-    // per compatibilità con eventuali script legacy, esportiamo alcune API utili
-    // (es: window.linkApp.renderer, window.linkApp.store se presenti)
   </script>
 </body>
 </html>

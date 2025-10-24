@@ -1,6 +1,7 @@
 // js/link-controller.js
 // Orchestrator: connette UI (DOM) -> link-creator -> link-store -> link-renderer.
-// Miglioramenti UX/accessibilità: focus management e keyboard shortcuts per le link-box.
+// Miglioramenti UX/accessibilità: focus management, keyboard shortcuts per le link-box.
+// Aggiunta gestione visuale degli errori sugli input/select quando GENERA è premuto senza dati.
 
 import { buildCampaignLink, normalizeOfferCode } from './link-creator.js';
 import * as store from './link-store.js';
@@ -162,6 +163,22 @@ export function initLinkController(options = {}) {
     });
   }
 
+  // ---- Error visual helper (adds red border + shake animation briefly) ----
+  function showFieldError(el) {
+    if (!el) return;
+    el.classList.add('input-error');
+    // add shake and remove it shortly after
+    el.classList.add('shake');
+    try { el.focus(); } catch (e) {}
+    setTimeout(() => {
+      el.classList.remove('shake');
+    }, 700);
+    // remove persistent error after a bit (if needed)
+    setTimeout(() => {
+      el.classList.remove('input-error');
+    }, 1400);
+  }
+
   // ---- Delegated click handlers (copy/open/delete) ----
   container.addEventListener('click', async (ev) => {
     const btn = ev.target && ev.target.closest ? ev.target.closest('button') : null;
@@ -203,7 +220,6 @@ export function initLinkController(options = {}) {
   });
 
   // ---- Keyboard support (focusable link-boxes) ----
-  // Key handling for focused .link-box (Delete / Backspace / Enter / Ctrl/Cmd+C)
   container.addEventListener('keydown', async (ev) => {
     const active = document.activeElement;
     const box = active && active.classList && active.classList.contains('link-box') ? active : (active && active.closest ? active.closest('.link-box') : null);
@@ -232,7 +248,6 @@ export function initLinkController(options = {}) {
       const href = box.dataset && box.dataset.link;
       if (href) {
         const ok = await copyToClipboard(href);
-        // find the copy button to show feedback if present
         const copyBtn = box.querySelector('button.copy');
         if (copyBtn) {
           copyBtn.textContent = ok ? 'Copiato!' : 'Errore';
@@ -275,19 +290,26 @@ export function initLinkController(options = {}) {
     });
   }
 
-  // ---- Generate behaviour ----
+  // ---- Generate behaviour (with visual error feedback) ----
   generateBtn.addEventListener('click', () => {
     const custom = (customOffer && customOffer.value || '').trim();
     const selected = (offerSelect && offerSelect.value || '').trim();
     const chosen = custom !== '' ? custom : selected;
 
     if (!chosen) {
+      // highlight both fields (offer select + custom input) to show required input
+      // prefer focusing the select if it is visible / present
+      if (offerSelect) showFieldError(offerSelect);
+      if (customOffer) showFieldError(customOffer);
       announce('Seleziona o inserisci il codice offerta.');
       return;
     }
 
     const { code, valid } = normalizeOfferCode(chosen);
     if (!valid) {
+      // indicate the specific field with error
+      if (custom !== '') showFieldError(customOffer);
+      else showFieldError(offerSelect);
       announce('Codice offerta non valido.');
       return;
     }

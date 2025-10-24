@@ -1,0 +1,15 @@
+/* Optional explicit light theme overrides (load this file if you want to force light theme) */
+:root {
+  --bg-start: #fff8f8;
+  --bg-end: #f3fff3;
+  --text: #222222;
+  --muted-border: #dcdcdc;
+  --card-bg: #ffffff;
+  --highlight-bg: #f7fff7;
+  --link-bg: #f9fff9;
+  --green: #00b25c;
+  --red: #b30000;
+  --button-gradient: linear-gradient(90deg, var(--green), var(--red));
+  --badge-bg: var(--red);
+  --focus-ring: rgba(0,178,92,0.16);
+}
